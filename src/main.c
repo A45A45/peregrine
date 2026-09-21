@@ -1,5 +1,6 @@
 #include <gtk/gtk.h>
 #include <webkit/webkit.h>
+#include "tab_manager.h"
 #include "command_bar.h"
 
 static void activate(GtkApplication *app, gpointer user_data) {
@@ -12,16 +13,10 @@ static void activate(GtkApplication *app, gpointer user_data) {
     GtkWidget *root_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_window_set_child(GTK_WINDOW(window), root_box);
 
-    GtkWidget *notebook = gtk_notebook_new();
-    gtk_notebook_set_show_tabs(GTK_NOTEBOOK(notebook), TRUE);
-    gtk_notebook_set_show_border(GTK_NOTEBOOK(notebook), FALSE);
-    gtk_notebook_set_scrollable(GTK_NOTEBOOK(notebook), TRUE);
-    gtk_widget_set_vexpand(notebook, TRUE);
-    gtk_widget_set_hexpand(notebook, TRUE);
+    GtkWidget *notebook = tab_manager_create_notebook();
     gtk_box_append(GTK_BOX(root_box), notebook);
 
-    app_add_tab(notebook, url);
-
+    tab_manager_add_tab(notebook, url);
     command_bar_init(window, notebook, root_box);
 
     gtk_window_present(GTK_WINDOW(window));

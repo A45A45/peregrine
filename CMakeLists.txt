@@ -10,6 +10,7 @@ pkg_check_modules(WEBKIT REQUIRED IMPORTED_TARGET webkitgtk-6.0)
 
 add_executable(peregrine
     src/main.c
+    src/tab_manager.c
     src/command_bar.c
 )
 

@@ -1,30 +1,5 @@
 #include "command_bar.h"
-
-GtkWidget *app_add_tab(GtkWidget *notebook, const char *url) {
-    GtkWidget *web_view = webkit_web_view_new();
-    gtk_widget_set_vexpand(web_view, TRUE);
-    gtk_widget_set_hexpand(web_view, TRUE);
-
-    GtkWidget *tab_label = gtk_label_new("Tab");
-    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), web_view, tab_label);
-    gtk_widget_set_visible(web_view, TRUE);
-    gtk_widget_set_visible(tab_label, TRUE);
-
-    int page_num = gtk_notebook_get_n_pages(GTK_NOTEBOOK(notebook)) - 1;
-    gtk_notebook_set_current_page(GTK_NOTEBOOK(notebook), page_num);
-
-    if (url && *url != '\0') {
-        g_autofree gchar *final_url = NULL;
-        if (g_str_has_prefix(url, "http://") || g_str_has_prefix(url, "https://")) {
-            final_url = g_strdup(url);
-        } else {
-            final_url = g_strconcat("https://", url, NULL);
-        }
-        webkit_web_view_load_uri(WEBKIT_WEB_VIEW(web_view), final_url);
-    }
-
-    return web_view;
-}
+#include "tab_manager.h"
 
 static WebKitWebView *get_current_web_view(GtkNotebook *notebook) {
     int current_page = gtk_notebook_get_current_page(notebook);
@@ -71,13 +46,15 @@ static void on_entry_activate(GtkEntry *entry, gpointer user_data) {
         } else if (g_str_has_prefix(text, "newtab ")) {
             const char *url_part = text + 7;
             while (*url_part == ' ') url_part++;
-            app_add_tab(state->notebook, *url_part != '\0' ? url_part : "https://webkitgtk.org");
+            tab_manager_add_tab(state->notebook, *url_part != '\0' ? url_part : "https://webkitgtk.org");
         } else if (g_str_has_prefix(text, "nt ")) {
             const char *url_part = text + 3;
             while (*url_part == ' ') url_part++;
-            app_add_tab(state->notebook, *url_part != '\0' ? url_part : "https://webkitgtk.org");
+            tab_manager_add_tab(state->notebook, *url_part != '\0' ? url_part : "https://webkitgtk.org");
         } else if (g_str_equal(text, "newtab") || g_str_equal(text, "nt")) {
-            app_add_tab(state->notebook, "https://webkitgtk.org");
+            tab_manager_add_tab(state->notebook, "https://webkitgtk.org");
+        } else if (g_str_equal(text, "closetab") || g_str_equal(text, "close") || g_str_equal(text, "ct")) {
+            tab_manager_close_current_tab(state->notebook, state->window);
         }
     }
 
@@ -98,6 +75,16 @@ static gboolean on_key_pressed(GtkEventControllerKey *controller,
     gboolean bar_visible = gtk_widget_get_visible(state->command_bar);
 
     if (!bar_visible) {
+        if ((state_mask & GDK_CONTROL_MASK) != 0) {
+            if (keyval == GDK_KEY_t || keyval == GDK_KEY_T) {
+                tab_manager_add_tab(state->notebook, "https://webkitgtk.org");
+                return TRUE;
+            } else if (keyval == GDK_KEY_w || keyval == GDK_KEY_W) {
+                tab_manager_close_current_tab(state->notebook, state->window);
+                return TRUE;
+            }
+        }
+
         if (keyval == GDK_KEY_colon) {
             gtk_widget_set_visible(state->command_bar, TRUE);
             gtk_widget_grab_focus(state->entry);
