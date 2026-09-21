@@ -1,5 +1,6 @@
 #include "command_bar.h"
 #include "tab_manager.h"
+#include "vim_bindings.h"
 
 static WebKitWebView *get_current_web_view(GtkNotebook *notebook) {
     int current_page = gtk_notebook_get_current_page(notebook);
@@ -89,6 +90,10 @@ static gboolean on_key_pressed(GtkEventControllerKey *controller,
             gtk_widget_set_visible(state->command_bar, TRUE);
             gtk_widget_grab_focus(state->entry);
             gtk_editable_set_text(GTK_EDITABLE(state->entry), "");
+            return TRUE;
+        }
+
+        if (vim_bindings_handle_key(GTK_NOTEBOOK(state->notebook), state->command_bar, keyval, state_mask)) {
             return TRUE;
         }
     } else {

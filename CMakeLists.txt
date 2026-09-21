@@ -12,6 +12,7 @@ add_executable(peregrine
     src/main.c
     src/tab_manager.c
     src/command_bar.c
+    src/vim_bindings.c
 )
 
 target_link_libraries(peregrine PRIVATE PkgConfig::GTK4 PkgConfig::WEBKIT)

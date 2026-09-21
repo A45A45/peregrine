@@ -8,7 +8,7 @@ static void activate(GtkApplication *app, gpointer user_data) {
 
     GtkWidget *window = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(window), "Peregrine");
-    gtk_window_set_default_size(GTK_WINDOW(window), 1024, 768);
+    gtk_window_set_default_size(GTK_WINDOW(window), 1920, 1080);
 
     GtkWidget *root_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_window_set_child(GTK_WINDOW(window), root_box);
