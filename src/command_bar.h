@@ -6,11 +6,12 @@
 
 typedef struct {
     GtkWidget *window;
-    GtkWidget *web_view;
+    GtkWidget *notebook;
     GtkWidget *command_bar;
     GtkWidget *entry;
 } AppState;
 
-AppState *command_bar_init(GtkWidget *window, GtkWidget *web_view, GtkWidget *root_box);
+GtkWidget *app_add_tab(GtkWidget *notebook, const char *url);
+AppState *command_bar_init(GtkWidget *window, GtkWidget *notebook, GtkWidget *root_box);
 
 #endif // COMMAND_BAR_H

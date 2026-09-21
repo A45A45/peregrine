@@ -12,13 +12,18 @@ static void activate(GtkApplication *app, gpointer user_data) {
     GtkWidget *root_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_window_set_child(GTK_WINDOW(window), root_box);
 
-    GtkWidget *web_view = webkit_web_view_new();
-    gtk_widget_set_vexpand(web_view, TRUE);
-    gtk_box_append(GTK_BOX(root_box), web_view);
+    GtkWidget *notebook = gtk_notebook_new();
+    gtk_notebook_set_show_tabs(GTK_NOTEBOOK(notebook), TRUE);
+    gtk_notebook_set_show_border(GTK_NOTEBOOK(notebook), FALSE);
+    gtk_notebook_set_scrollable(GTK_NOTEBOOK(notebook), TRUE);
+    gtk_widget_set_vexpand(notebook, TRUE);
+    gtk_widget_set_hexpand(notebook, TRUE);
+    gtk_box_append(GTK_BOX(root_box), notebook);
 
-    command_bar_init(window, web_view, root_box);
+    app_add_tab(notebook, url);
 
-    webkit_web_view_load_uri(WEBKIT_WEB_VIEW(web_view), url);
+    command_bar_init(window, notebook, root_box);
+
     gtk_window_present(GTK_WINDOW(window));
 }
 
