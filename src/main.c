@@ -1,5 +1,6 @@
 #include <gtk/gtk.h>
 #include <webkit/webkit.h>
+#include "command_bar.h"
 
 static void activate(GtkApplication *app, gpointer user_data) {
     const char *url = (const char *)user_data;
@@ -8,8 +9,14 @@ static void activate(GtkApplication *app, gpointer user_data) {
     gtk_window_set_title(GTK_WINDOW(window), "Peregrine");
     gtk_window_set_default_size(GTK_WINDOW(window), 1024, 768);
 
+    GtkWidget *root_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_window_set_child(GTK_WINDOW(window), root_box);
+
     GtkWidget *web_view = webkit_web_view_new();
-    gtk_window_set_child(GTK_WINDOW(window), web_view);
+    gtk_widget_set_vexpand(web_view, TRUE);
+    gtk_box_append(GTK_BOX(root_box), web_view);
+
+    command_bar_init(window, web_view, root_box);
 
     webkit_web_view_load_uri(WEBKIT_WEB_VIEW(web_view), url);
     gtk_window_present(GTK_WINDOW(window));
