@@ -10,7 +10,6 @@ typedef struct {
 static void on_script_message_received(WebKitUserContentManager *manager, JSCValue *result, gpointer user_data) {
     TabContext *ctx = (TabContext *)user_data;
     //Build issue ?
-    //JSCValue *value = webkit_javascript_result_get_js_value(result)
     if (jsc_value_is_string(result)) {
         g_autofree gchar *str = jsc_value_to_string(result);
         if (g_strcmp0(str, "1") == 0) {
