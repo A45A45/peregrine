@@ -18,12 +18,7 @@ static void on_entry_activate(GtkEntry *entry, gpointer user_data) {
             const char *url_part = text + 5;
             while (*url_part == ' ') url_part++;
             if (*url_part != '\0') {
-                g_autofree gchar *final_url = NULL;
-                if (g_str_has_prefix(url_part, "http://") || g_str_has_prefix(url_part, "https://")) {
-                    final_url = g_strdup(url_part);
-                } else {
-                    final_url = g_strconcat("https://", url_part, NULL);
-                }
+                g_autofree gchar *final_url = tab_manager_normalize_url(url_part);
                 WebKitWebView *current_wv = get_active_web_view(GTK_NOTEBOOK(state->notebook));
                 if (current_wv) {
                     webkit_web_view_load_uri(current_wv, final_url);
@@ -33,12 +28,7 @@ static void on_entry_activate(GtkEntry *entry, gpointer user_data) {
             const char *url_part = text + 2;
             while (*url_part == ' ') url_part++;
             if (*url_part != '\0') {
-                g_autofree gchar *final_url = NULL;
-                if (g_str_has_prefix(url_part, "http://") || g_str_has_prefix(url_part, "https://")) {
-                    final_url = g_strdup(url_part);
-                } else {
-                    final_url = g_strconcat("https://", url_part, NULL);
-                }
+                g_autofree gchar *final_url = tab_manager_normalize_url(url_part);
                 WebKitWebView *current_wv = get_active_web_view(GTK_NOTEBOOK(state->notebook));
                 if (current_wv) {
                     webkit_web_view_load_uri(current_wv, final_url);

@@ -25,7 +25,7 @@ static void activate(GtkApplication *app, gpointer user_data) {
 }
 
 int main(int argc, char **argv) {
-    const char *url = (argc > 1) ? argv[1] : "https://webkitgtk.org";
+    const char *url = (argc > 1) ? argv[1] : "https://swisscows.com";
 
     GtkApplication *app = gtk_application_new("org.peregrine.browser", G_APPLICATION_DEFAULT_FLAGS);
     g_signal_connect(app, "activate", G_CALLBACK(activate), (gpointer)url);

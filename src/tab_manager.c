@@ -7,16 +7,21 @@ typedef struct {
     gboolean editable_focused;
 } TabContext;
 
+char *tab_manager_normalize_url(const char *url) {
+    if (!url || *url == '\0') {
+        return g_strdup("https://webkitgtk.org");
+    }
+    if (g_str_has_prefix(url, "http://") || g_str_has_prefix(url, "https://") || g_str_has_prefix(url, "file://")) {
+        return g_strdup(url);
+    }
+    return g_strconcat("https://", url, NULL);
+}
+
 static void on_script_message_received(WebKitUserContentManager *manager, JSCValue *result, gpointer user_data) {
     TabContext *ctx = (TabContext *)user_data;
-    //Build issue ?
     if (jsc_value_is_string(result)) {
         g_autofree gchar *str = jsc_value_to_string(result);
-        if (g_strcmp0(str, "1") == 0) {
-            ctx->editable_focused = TRUE;
-        } else {
-            ctx->editable_focused = FALSE;
-        }
+        ctx->editable_focused = (g_strcmp0(str, "1") == 0);
     }
 }
 
@@ -93,14 +98,26 @@ GtkWidget *tab_manager_add_tab(GtkWidget *notebook, const char *url, GCallback k
     webkit_user_content_manager_register_script_message_handler(ucm, "peregrineFocus", NULL);
     g_signal_connect(ucm, "script-message-received::peregrineFocus", G_CALLBACK(on_script_message_received), ctx);
 
+    // Optimized script tracking editable state to avoid redundant IPC messages
     const char *script_source =
+        "let __peregrine_last_editable = false;"
         "window.addEventListener('focusin', (e) => {"
         "    const tag = e.target.tagName;"
         "    const isEditable = e.target.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';"
-        "    window.webkit.messageHandlers.peregrineFocus.postMessage(isEditable ? '1' : '0');"
+        "    if (isEditable !== __peregrine_last_editable) {"
+        "        __peregrine_last_editable = isEditable;"
+        "        window.webkit.messageHandlers.peregrineFocus.postMessage(isEditable ? '1' : '0');"
+        "    }"
         "}, true);"
         "window.addEventListener('focusout', (e) => {"
-        "    window.webkit.messageHandlers.peregrineFocus.postMessage('0');"
+        "    setTimeout(() => {"
+        "        if (!document.activeElement || document.activeElement === document.body) {"
+        "            if (__peregrine_last_editable) {"
+        "                __peregrine_last_editable = false;"
+        "                window.webkit.messageHandlers.peregrineFocus.postMessage('0');"
+        "            }"
+        "        }"
+        "    }, 0);"
         "}, true);";
 
     WebKitUserScript *user_script = webkit_user_script_new(
@@ -129,15 +146,8 @@ GtkWidget *tab_manager_add_tab(GtkWidget *notebook, const char *url, GCallback k
     int page_num = gtk_notebook_get_n_pages(GTK_NOTEBOOK(notebook)) - 1;
     gtk_notebook_set_current_page(GTK_NOTEBOOK(notebook), page_num);
 
-    if (url && *url != '\0') {
-        g_autofree gchar *final_url = NULL;
-        if (g_str_has_prefix(url, "http://") || g_str_has_prefix(url, "https://")) {
-            final_url = g_strdup(url);
-        } else {
-            final_url = g_strconcat("https://", url, NULL);
-        }
-        webkit_web_view_load_uri(WEBKIT_WEB_VIEW(web_view), final_url);
-    }
+    g_autofree gchar *final_url = tab_manager_normalize_url(url);
+    webkit_web_view_load_uri(WEBKIT_WEB_VIEW(web_view), final_url);
 
     return web_view;
 }

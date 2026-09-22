@@ -59,6 +59,7 @@ static const char *HINT_MODE_JS =
 "    document.body.appendChild(container);\n"
 "    \n"
 "    window.__peregrine_hint_map = {};\n"
+"    window.__peregrine_hint_items = [];\n"
 "    \n"
 "    visibleElements.forEach((item, index) => {\n"
 "        if (index >= labels.length) return;\n"
@@ -82,6 +83,8 @@ static const char *HINT_MODE_JS =
 "        hintDiv.style.borderRadius = '2px';\n"
 "        hintDiv.style.zIndex = '2147483647';\n"
 "        container.appendChild(hintDiv);\n"
+"        \n"
+"        window.__peregrine_hint_items.push({ hint: hintDiv, text: label });\n"
 "    });\n"
 "    \n"
 "    window.__peregrine_handle_char = function(ch) {\n"
@@ -98,19 +101,19 @@ static const char *HINT_MODE_JS =
 "        }\n"
 "        \n"
 "        let matchFound = false;\n"
-"        const hints = container.querySelectorAll('.peregrine-hint');\n"
-"        hints.forEach(hint => {\n"
-"            const text = hint.textContent.toLowerCase();\n"
-"            if (text.startsWith(typed)) {\n"
+"        const items = window.__peregrine_hint_items;\n"
+"        for (let i = 0; i < items.length; i++) {\n"
+"            const item = items[i];\n"
+"            if (item.text.startsWith(typed)) {\n"
 "                matchFound = true;\n"
-"                hint.style.display = 'inline-block';\n"
-"                const matchedPart = text.substring(0, typed.length);\n"
-"                const restPart = text.substring(typed.length);\n"
-"                hint.innerHTML = `<span style=\"color: #ff0000;\">${matchedPart.toUpperCase()}</span>${restPart.toUpperCase()}`;\n"
+"                item.hint.style.display = 'inline-block';\n"
+"                const matchedPart = item.text.substring(0, typed.length);\n"
+"                const restPart = item.text.substring(typed.length);\n"
+"                item.hint.innerHTML = `<span style=\"color: #ff0000;\">${matchedPart.toUpperCase()}</span>${restPart.toUpperCase()}`;\n"
 "            } else {\n"
-"                hint.style.display = 'none';\n"
+"                item.hint.style.display = 'none';\n"
 "            }\n"
-"        });\n"
+"        }\n"
 "        \n"
 "        if (!matchFound) {\n"
 "            window.__peregrine_exit_hint_mode();\n"
@@ -126,6 +129,7 @@ static const char *HINT_MODE_JS =
 "        if (c) c.remove();\n"
 "        delete window.__peregrine_hint_container;\n"
 "        delete window.__peregrine_hint_map;\n"
+"        delete window.__peregrine_hint_items;\n"
 "        delete window.__peregrine_handle_char;\n"
 "        delete window.__peregrine_exit_hint_mode;\n"
 "        delete window.__peregrine_typed;\n"
@@ -177,7 +181,7 @@ gboolean vim_bindings_handle_key(GtkNotebook *notebook, GtkWidget *command_bar, 
     gboolean shift = (state_mask & GDK_SHIFT_MASK) != 0;
 
     if (g_hint_mode) {
-        if (keyval == GDK_KEY_Escape || (ctrl && (keyval == GDK_KEY_bracketleft || keyval == GDK_KEY_bracketleft))) {
+        if (keyval == GDK_KEY_Escape || (ctrl && keyval == GDK_KEY_bracketleft)) {
             vim_bindings_exit_hint_mode(web_view);
             return TRUE;
         }
