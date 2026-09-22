@@ -17,6 +17,12 @@ char *tab_manager_normalize_url(const char *url) {
     return g_strconcat("https://", url, NULL);
 }
 
+static void on_switch_page(GtkNotebook *notebook, GtkWidget *page, guint page_num, gpointer user_data) {
+    if (page && GTK_IS_WIDGET(page)) {
+        gtk_widget_grab_focus(page);
+    }
+}
+
 static void on_script_message_received(WebKitUserContentManager *manager, JSCValue *result, gpointer user_data) {
     TabContext *ctx = (TabContext *)user_data;
     if (jsc_value_is_string(result)) {
@@ -64,6 +70,7 @@ GtkWidget *tab_manager_create_notebook(void) {
     gtk_notebook_set_scrollable(GTK_NOTEBOOK(notebook), TRUE);
     gtk_widget_set_vexpand(notebook, TRUE);
     gtk_widget_set_hexpand(notebook, TRUE);
+    g_signal_connect(notebook, "switch-page", G_CALLBACK(on_switch_page), NULL);
     return notebook;
 }
 
@@ -145,6 +152,7 @@ GtkWidget *tab_manager_add_tab(GtkWidget *notebook, const char *url, GCallback k
 
     int page_num = gtk_notebook_get_n_pages(GTK_NOTEBOOK(notebook)) - 1;
     gtk_notebook_set_current_page(GTK_NOTEBOOK(notebook), page_num);
+    gtk_widget_grab_focus(web_view);
 
     g_autofree gchar *final_url = tab_manager_normalize_url(url);
     webkit_web_view_load_uri(WEBKIT_WEB_VIEW(web_view), final_url);
