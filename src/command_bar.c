@@ -37,13 +37,13 @@ static void on_entry_activate(GtkEntry *entry, gpointer user_data) {
         } else if (g_str_has_prefix(text, "newtab ")) {
             const char *url_part = text + 7;
             while (*url_part == ' ') url_part++;
-            tab_manager_add_tab(state->notebook, *url_part != '\0' ? url_part : "https://webkitgtk.org", G_CALLBACK(on_key_pressed), state);
+            tab_manager_add_tab(state->notebook, *url_part != '\0' ? url_part : "https://swisscows.com", G_CALLBACK(on_key_pressed), state);
         } else if (g_str_has_prefix(text, "nt ")) {
             const char *url_part = text + 3;
             while (*url_part == ' ') url_part++;
-            tab_manager_add_tab(state->notebook, *url_part != '\0' ? url_part : "https://webkitgtk.org", G_CALLBACK(on_key_pressed), state);
+            tab_manager_add_tab(state->notebook, *url_part != '\0' ? url_part : "https://swisscows.com", G_CALLBACK(on_key_pressed), state);
         } else if (g_str_equal(text, "newtab") || g_str_equal(text, "nt")) {
-            tab_manager_add_tab(state->notebook, "https://webkitgtk.org", G_CALLBACK(on_key_pressed), state);
+            tab_manager_add_tab(state->notebook, "https://swisscows.com", G_CALLBACK(on_key_pressed), state);
         } else if (g_str_equal(text, "closetab") || g_str_equal(text, "close") || g_str_equal(text, "ct")) {
             tab_manager_close_current_tab(state->notebook, state->window);
         }
@@ -68,7 +68,7 @@ gboolean on_key_pressed(GtkEventControllerKey *controller,
     if (!bar_visible) {
         if ((state_mask & GDK_CONTROL_MASK) != 0) {
             if (keyval == GDK_KEY_t || keyval == GDK_KEY_T) {
-                tab_manager_add_tab(state->notebook, "https://webkitgtk.org", G_CALLBACK(on_key_pressed), state);
+                tab_manager_add_tab(state->notebook, "https://swisscows.com", G_CALLBACK(on_key_pressed), state);
                 return TRUE;
             } else if (keyval == GDK_KEY_w || keyval == GDK_KEY_W) {
                 tab_manager_close_current_tab(state->notebook, state->window);
