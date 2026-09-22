@@ -13,7 +13,6 @@ add_executable(peregrine
     src/tab_manager.c
     src/command_bar.c
     src/vim_bindings.c
-    src/utils.c
 )
 
 target_include_directories(peregrine PRIVATE ${GTK4_INCLUDE_DIRS} ${WEBKIT_INCLUDE_DIRS})

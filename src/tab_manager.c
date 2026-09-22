@@ -1,5 +1,4 @@
 #include "tab_manager.h"
-#include "utils.h"
 
 typedef struct {
     GtkWidget *notebook;
@@ -8,24 +7,17 @@ typedef struct {
     gboolean editable_focused;
 } TabContext;
 
-static void close_tab_at_index(GtkNotebook *notebook, int page_num) {
-    if (page_num < 0) return;
-    int n_pages = gtk_notebook_get_n_pages(notebook);
-    if (n_pages > 1) {
-        gtk_notebook_remove_page(notebook, page_num);
-    } else {
-        GtkWidget *window = GTK_WIDGET(gtk_widget_get_root(GTK_WIDGET(notebook)));
-        if (GTK_IS_WINDOW(window)) {
-            gtk_window_close(GTK_WINDOW(window));
-        }
-    }
-}
-
 static void on_script_message_received(WebKitUserContentManager *manager, JSCValue *result, gpointer user_data) {
     TabContext *ctx = (TabContext *)user_data;
+    //Build issue ?
+    //JSCValue *value = webkit_javascript_result_get_js_value(result)
     if (jsc_value_is_string(result)) {
         g_autofree gchar *str = jsc_value_to_string(result);
-        ctx->editable_focused = (g_strcmp0(str, "1") == 0);
+        if (g_strcmp0(str, "1") == 0) {
+            ctx->editable_focused = TRUE;
+        } else {
+            ctx->editable_focused = FALSE;
+        }
     }
 }
 
@@ -34,8 +26,8 @@ static void on_title_changed(WebKitWebView *web_view, GParamSpec *pspec, gpointe
     const char *title = webkit_web_view_get_title(web_view);
     if (title && *title != '\0') {
         if (g_utf8_strlen(title, -1) > 20) {
-            const char *end = g_utf8_offset_to_pointer(title, 18);
-            g_autofree gchar *display_title = g_strdup_printf("%.*s...", (int)(end - title), title);
+            g_autofree gchar *truncated = g_utf8_substring(title, 0, 18);
+            g_autofree gchar *display_title = g_strconcat(truncated, "...", NULL);
             gtk_label_set_text(label, display_title);
         } else {
             gtk_label_set_text(label, title);
@@ -47,8 +39,18 @@ static void on_title_changed(WebKitWebView *web_view, GParamSpec *pspec, gpointe
 
 static void on_close_clicked(GtkButton *button, gpointer user_data) {
     TabContext *ctx = (TabContext *)user_data;
-    int page_num = gtk_notebook_page_num(GTK_NOTEBOOK(ctx->notebook), ctx->web_view);
-    close_tab_at_index(GTK_NOTEBOOK(ctx->notebook), page_num);
+    int n_pages = gtk_notebook_get_n_pages(GTK_NOTEBOOK(ctx->notebook));
+    if (n_pages > 1) {
+        int page_num = gtk_notebook_page_num(GTK_NOTEBOOK(ctx->notebook), ctx->web_view);
+        if (page_num >= 0) {
+            gtk_notebook_remove_page(GTK_NOTEBOOK(ctx->notebook), page_num);
+        }
+    } else {
+        GtkWidget *window = GTK_WIDGET(gtk_widget_get_root(ctx->notebook));
+        if (GTK_IS_WINDOW(window)) {
+            gtk_window_close(GTK_WINDOW(window));
+        }
+    }
 }
 
 GtkWidget *tab_manager_create_notebook(void) {
@@ -129,18 +131,30 @@ GtkWidget *tab_manager_add_tab(GtkWidget *notebook, const char *url, GCallback k
     gtk_notebook_set_current_page(GTK_NOTEBOOK(notebook), page_num);
 
     if (url && *url != '\0') {
-        g_autofree gchar *final_url = utils_ensure_url_scheme(url);
-        if (final_url) {
-            webkit_web_view_load_uri(WEBKIT_WEB_VIEW(web_view), final_url);
+        g_autofree gchar *final_url = NULL;
+        if (g_str_has_prefix(url, "http://") || g_str_has_prefix(url, "https://")) {
+            final_url = g_strdup(url);
+        } else {
+            final_url = g_strconcat("https://", url, NULL);
         }
+        webkit_web_view_load_uri(WEBKIT_WEB_VIEW(web_view), final_url);
     }
 
     return web_view;
 }
 
 void tab_manager_close_current_tab(GtkWidget *notebook, GtkWidget *window) {
-    int current_page = gtk_notebook_get_current_page(GTK_NOTEBOOK(notebook));
-    close_tab_at_index(GTK_NOTEBOOK(notebook), current_page);
+    int n_pages = gtk_notebook_get_n_pages(GTK_NOTEBOOK(notebook));
+    if (n_pages > 1) {
+        int current_page = gtk_notebook_get_current_page(GTK_NOTEBOOK(notebook));
+        if (current_page >= 0) {
+            gtk_notebook_remove_page(GTK_NOTEBOOK(notebook), current_page);
+        }
+    } else {
+        if (window && GTK_IS_WINDOW(window)) {
+            gtk_window_close(GTK_WINDOW(window));
+        }
+    }
 }
 
 gboolean tab_manager_is_editable_focused(GtkNotebook *notebook) {
