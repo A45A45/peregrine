@@ -8,7 +8,7 @@ static void activate(GtkApplication *app, gpointer user_data) {
 
     GtkWidget *window = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(window), "Peregrine");
-    gtk_window_set_default_size(GTK_WINDOW(window), 1920, 1080);
+    gtk_window_set_default_size(GTK_WINDOW(window), 1024, 768);
 
     GtkWidget *root_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_window_set_child(GTK_WINDOW(window), root_box);
@@ -16,8 +16,9 @@ static void activate(GtkApplication *app, gpointer user_data) {
     GtkWidget *notebook = tab_manager_create_notebook();
     gtk_box_append(GTK_BOX(root_box), notebook);
 
-    tab_manager_add_tab(notebook, url);
-    command_bar_init(window, notebook, root_box);
+    AppState *state = command_bar_init(window, notebook, root_box);
+
+    tab_manager_add_tab(notebook, url, G_CALLBACK(on_key_pressed), state);
 
     gtk_window_present(GTK_WINDOW(window));
 }

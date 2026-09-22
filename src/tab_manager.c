@@ -4,7 +4,22 @@ typedef struct {
     GtkWidget *notebook;
     GtkWidget *web_view;
     GtkWidget *label;
+    gboolean editable_focused;
 } TabContext;
+
+static void on_script_message_received(WebKitUserContentManager *manager, JSCValue *result, gpointer user_data) {
+    TabContext *ctx = (TabContext *)user_data;
+    //Build issue ?
+    //JSCValue *value = webkit_javascript_result_get_js_value(result)
+    if (jsc_value_is_string(result)) {
+        g_autofree gchar *str = jsc_value_to_string(result);
+        if (g_strcmp0(str, "1") == 0) {
+            ctx->editable_focused = TRUE;
+        } else {
+            ctx->editable_focused = FALSE;
+        }
+    }
+}
 
 static void on_title_changed(WebKitWebView *web_view, GParamSpec *pspec, gpointer user_data) {
     GtkLabel *label = GTK_LABEL(user_data);
@@ -48,7 +63,7 @@ GtkWidget *tab_manager_create_notebook(void) {
     return notebook;
 }
 
-GtkWidget *tab_manager_add_tab(GtkWidget *notebook, const char *url) {
+GtkWidget *tab_manager_add_tab(GtkWidget *notebook, const char *url, GCallback key_press_cb, gpointer user_data) {
     GtkWidget *web_view = webkit_web_view_new();
     gtk_widget_set_vexpand(web_view, TRUE);
     gtk_widget_set_hexpand(web_view, TRUE);
@@ -71,10 +86,43 @@ GtkWidget *tab_manager_add_tab(GtkWidget *notebook, const char *url) {
     ctx->notebook = notebook;
     ctx->web_view = web_view;
     ctx->label = label;
+    ctx->editable_focused = FALSE;
+
+    g_object_set_data(G_OBJECT(web_view), "tab-context", ctx);
+
+    WebKitUserContentManager *ucm = webkit_web_view_get_user_content_manager(WEBKIT_WEB_VIEW(web_view));
+    webkit_user_content_manager_register_script_message_handler(ucm, "peregrineFocus", NULL);
+    g_signal_connect(ucm, "script-message-received::peregrineFocus", G_CALLBACK(on_script_message_received), ctx);
+
+    const char *script_source =
+        "window.addEventListener('focusin', (e) => {"
+        "    const tag = e.target.tagName;"
+        "    const isEditable = e.target.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';"
+        "    window.webkit.messageHandlers.peregrineFocus.postMessage(isEditable ? '1' : '0');"
+        "}, true);"
+        "window.addEventListener('focusout', (e) => {"
+        "    window.webkit.messageHandlers.peregrineFocus.postMessage('0');"
+        "}, true);";
+
+    WebKitUserScript *user_script = webkit_user_script_new(
+        script_source,
+        WEBKIT_USER_CONTENT_INJECT_TOP_FRAME,
+        WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START,
+        NULL, NULL
+    );
+    webkit_user_content_manager_add_script(ucm, user_script);
+    webkit_user_script_unref(user_script);
 
     g_signal_connect_swapped(web_view, "destroy", G_CALLBACK(g_free), ctx);
     g_signal_connect(close_btn, "clicked", G_CALLBACK(on_close_clicked), ctx);
     g_signal_connect(web_view, "notify::title", G_CALLBACK(on_title_changed), label);
+
+    if (key_press_cb) {
+        GtkEventController *key_controller = gtk_event_controller_key_new();
+        gtk_event_controller_set_propagation_phase(key_controller, GTK_PHASE_CAPTURE);
+        g_signal_connect(key_controller, "key-pressed", key_press_cb, user_data);
+        gtk_widget_add_controller(web_view, key_controller);
+    }
 
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), web_view, tab_box);
     gtk_widget_set_visible(web_view, TRUE);
@@ -107,4 +155,15 @@ void tab_manager_close_current_tab(GtkWidget *notebook, GtkWidget *window) {
             gtk_window_close(GTK_WINDOW(window));
         }
     }
+}
+
+gboolean tab_manager_is_editable_focused(GtkNotebook *notebook) {
+    int current_page = gtk_notebook_get_current_page(notebook);
+    if (current_page < 0) return FALSE;
+    GtkWidget *child = gtk_notebook_get_nth_page(notebook, current_page);
+    TabContext *ctx = g_object_get_data(G_OBJECT(child), "tab-context");
+    if (ctx) {
+        return ctx->editable_focused;
+    }
+    return FALSE;
 }

@@ -1,6 +1,8 @@
 #include "vim_bindings.h"
 #include "tab_manager.h"
 
+static gboolean g_pending = FALSE;
+
 static WebKitWebView *get_current_web_view(GtkNotebook *notebook) {
     int current_page = gtk_notebook_get_current_page(notebook);
     if (current_page < 0) return NULL;
@@ -9,7 +11,8 @@ static WebKitWebView *get_current_web_view(GtkNotebook *notebook) {
 }
 
 gboolean vim_bindings_handle_key(GtkNotebook *notebook, GtkWidget *command_bar, guint keyval, GdkModifierType state_mask) {
-    if (gtk_widget_get_visible(command_bar)) {
+    if (gtk_widget_get_visible(command_bar) || tab_manager_is_editable_focused(notebook)) {
+        g_pending = FALSE;
         return FALSE;
     }
 
@@ -18,6 +21,7 @@ gboolean vim_bindings_handle_key(GtkNotebook *notebook, GtkWidget *command_bar, 
     gboolean shift = (state_mask & GDK_SHIFT_MASK) != 0;
 
     if (ctrl) {
+        g_pending = FALSE;
         if (keyval == GDK_KEY_d || keyval == GDK_KEY_D) {
             if (web_view) webkit_web_view_evaluate_javascript(web_view, "window.scrollBy(0, window.innerHeight / 2);", -1, NULL, NULL, NULL, NULL, NULL);
             return TRUE;
@@ -29,7 +33,27 @@ gboolean vim_bindings_handle_key(GtkNotebook *notebook, GtkWidget *command_bar, 
         return FALSE;
     }
 
+    if (g_pending) {
+        g_pending = FALSE;
+        if (keyval == GDK_KEY_g) {
+            if (web_view) {
+                webkit_web_view_evaluate_javascript(web_view, "window.scrollTo(0, 0);", -1, NULL, NULL, NULL, NULL, NULL);
+            }
+            return TRUE;
+        } else if (keyval == GDK_KEY_t) {
+            gtk_notebook_next_page(notebook);
+            return TRUE;
+        } else if (keyval == GDK_KEY_T || (shift && keyval == GDK_KEY_t)) {
+            gtk_notebook_prev_page(notebook);
+            return TRUE;
+        }
+    }
+
     switch (keyval) {
+        case GDK_KEY_g:
+            g_pending = TRUE;
+            return TRUE;
+
         case GDK_KEY_j:
         case GDK_KEY_J:
             if (shift) {
@@ -53,7 +77,7 @@ gboolean vim_bindings_handle_key(GtkNotebook *notebook, GtkWidget *command_bar, 
             return TRUE;
 
         case GDK_KEY_l:
-            if (web_view) webkit_web_view_evaluate_javascript(web_view, "window.scrollBy(80, 0);", -1, NULL, NULL, NULL, NULL, NULL);
+            if (web_view) webkit_web_view_evaluate_javascript(web_view, "window.scrollTo(80, 0);", -1, NULL, NULL, NULL, NULL, NULL);
             return TRUE;
 
         case GDK_KEY_G:
@@ -76,12 +100,6 @@ gboolean vim_bindings_handle_key(GtkNotebook *notebook, GtkWidget *command_bar, 
         case GDK_KEY_R:
             if (web_view) {
                 webkit_web_view_reload(web_view);
-            }
-            return TRUE;
-
-        case GDK_KEY_g:
-            if (web_view) {
-                webkit_web_view_evaluate_javascript(web_view, "window.scrollTo(0, 0);", -1, NULL, NULL, NULL, NULL, NULL);
             }
             return TRUE;
 
