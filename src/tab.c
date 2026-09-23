@@ -1,33 +1,16 @@
-#include "tab_manager.h"
+#include "tab.h"
+#include "webview.h"
+#include "util.h"
 
 typedef struct {
     GtkWidget *notebook;
     GtkWidget *web_view;
     GtkWidget *label;
-    gboolean editable_focused;
 } TabContext;
-
-char *tab_manager_normalize_url(const char *url) {
-    if (!url || *url == '\0') {
-        return g_strdup("https://webkitgtk.org");
-    }
-    if (g_str_has_prefix(url, "http://") || g_str_has_prefix(url, "https://") || g_str_has_prefix(url, "file://")) {
-        return g_strdup(url);
-    }
-    return g_strconcat("https://", url, NULL);
-}
 
 static void on_switch_page(GtkNotebook *notebook, GtkWidget *page, guint page_num, gpointer user_data) {
     if (page && GTK_IS_WIDGET(page)) {
         gtk_widget_grab_focus(page);
-    }
-}
-
-static void on_script_message_received(WebKitUserContentManager *manager, JSCValue *result, gpointer user_data) {
-    TabContext *ctx = (TabContext *)user_data;
-    if (jsc_value_is_string(result)) {
-        g_autofree gchar *str = jsc_value_to_string(result);
-        ctx->editable_focused = (g_strcmp0(str, "1") == 0);
     }
 }
 
@@ -75,9 +58,7 @@ GtkWidget *tab_manager_create_notebook(void) {
 }
 
 GtkWidget *tab_manager_add_tab(GtkWidget *notebook, const char *url, GCallback key_press_cb, gpointer user_data) {
-    GtkWidget *web_view = webkit_web_view_new();
-    gtk_widget_set_vexpand(web_view, TRUE);
-    gtk_widget_set_hexpand(web_view, TRUE);
+    GtkWidget *web_view = webview_create();
 
     GtkWidget *tab_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
     GtkWidget *label = gtk_label_new("New Tab");
@@ -97,46 +78,9 @@ GtkWidget *tab_manager_add_tab(GtkWidget *notebook, const char *url, GCallback k
     ctx->notebook = notebook;
     ctx->web_view = web_view;
     ctx->label = label;
-    ctx->editable_focused = FALSE;
 
-    g_object_set_data(G_OBJECT(web_view), "tab-context", ctx);
+    g_object_set_data_full(G_OBJECT(web_view), "tab-context", ctx, g_free);
 
-    WebKitUserContentManager *ucm = webkit_web_view_get_user_content_manager(WEBKIT_WEB_VIEW(web_view));
-    webkit_user_content_manager_register_script_message_handler(ucm, "peregrineFocus", NULL);
-    g_signal_connect(ucm, "script-message-received::peregrineFocus", G_CALLBACK(on_script_message_received), ctx);
-
-    // Optimized script tracking editable state to avoid redundant IPC messages
-    const char *script_source =
-        "let __peregrine_last_editable = false;"
-        "window.addEventListener('focusin', (e) => {"
-        "    const tag = e.target.tagName;"
-        "    const isEditable = e.target.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';"
-        "    if (isEditable !== __peregrine_last_editable) {"
-        "        __peregrine_last_editable = isEditable;"
-        "        window.webkit.messageHandlers.peregrineFocus.postMessage(isEditable ? '1' : '0');"
-        "    }"
-        "}, true);"
-        "window.addEventListener('focusout', (e) => {"
-        "    setTimeout(() => {"
-        "        if (!document.activeElement || document.activeElement === document.body) {"
-        "            if (__peregrine_last_editable) {"
-        "                __peregrine_last_editable = false;"
-        "                window.webkit.messageHandlers.peregrineFocus.postMessage('0');"
-        "            }"
-        "        }"
-        "    }, 0);"
-        "}, true);";
-
-    WebKitUserScript *user_script = webkit_user_script_new(
-        script_source,
-        WEBKIT_USER_CONTENT_INJECT_TOP_FRAME,
-        WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START,
-        NULL, NULL
-    );
-    webkit_user_content_manager_add_script(ucm, user_script);
-    webkit_user_script_unref(user_script);
-
-    g_signal_connect_swapped(web_view, "destroy", G_CALLBACK(g_free), ctx);
     g_signal_connect(close_btn, "clicked", G_CALLBACK(on_close_clicked), ctx);
     g_signal_connect(web_view, "notify::title", G_CALLBACK(on_title_changed), label);
 
@@ -154,7 +98,7 @@ GtkWidget *tab_manager_add_tab(GtkWidget *notebook, const char *url, GCallback k
     gtk_notebook_set_current_page(GTK_NOTEBOOK(notebook), page_num);
     gtk_widget_grab_focus(web_view);
 
-    g_autofree gchar *final_url = tab_manager_normalize_url(url);
+    g_autofree gchar *final_url = util_normalize_url(url);
     webkit_web_view_load_uri(WEBKIT_WEB_VIEW(web_view), final_url);
 
     return web_view;
@@ -174,13 +118,17 @@ void tab_manager_close_current_tab(GtkWidget *notebook, GtkWidget *window) {
     }
 }
 
-gboolean tab_manager_is_editable_focused(GtkNotebook *notebook) {
+WebKitWebView *tab_manager_get_active_web_view(GtkNotebook *notebook) {
     int current_page = gtk_notebook_get_current_page(notebook);
-    if (current_page < 0) return FALSE;
+    if (current_page < 0) return NULL;
     GtkWidget *child = gtk_notebook_get_nth_page(notebook, current_page);
-    TabContext *ctx = g_object_get_data(G_OBJECT(child), "tab-context");
-    if (ctx) {
-        return ctx->editable_focused;
+    return WEBKIT_WEB_VIEW(child);
+}
+
+gboolean tab_manager_is_editable_focused(GtkNotebook *notebook) {
+    WebKitWebView *web_view = tab_manager_get_active_web_view(notebook);
+    if (web_view) {
+        return webview_is_editable_focused(web_view);
     }
     return FALSE;
 }

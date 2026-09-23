@@ -10,9 +10,14 @@ pkg_check_modules(WEBKIT REQUIRED webkitgtk-6.0)
 
 add_executable(peregrine
     src/main.c
-    src/tab_manager.c
-    src/command_bar.c
-    src/vim_bindings.c
+    src/app.c
+    src/window.c
+    src/tab.c
+    src/webview.c
+    src/command.c
+    src/keys.c
+    src/hint.c
+    src/util.c
 )
 
 target_include_directories(peregrine PRIVATE ${GTK4_INCLUDE_DIRS} ${WEBKIT_INCLUDE_DIRS})

@@ -1,28 +1,8 @@
-#include "command_bar.h"
-#include "tab_manager.h"
-#include "vim_bindings.h"
-#include <string.h>
-
-static WebKitWebView *get_active_web_view(GtkNotebook *notebook) {
-    int current_page = gtk_notebook_get_current_page(notebook);
-    if (current_page < 0) return NULL;
-    GtkWidget *child = gtk_notebook_get_nth_page(notebook, current_page);
-    return WEBKIT_WEB_VIEW(child);
-}
-
-static gboolean is_bare_url(const char *text) {
-    if (!text || *text == '\0') return FALSE;
-    if (g_str_has_prefix(text, "http://") || 
-        g_str_has_prefix(text, "https://") || 
-        g_str_has_prefix(text, "file://") ||
-        g_str_has_prefix(text, "www.")) {
-        return TRUE;
-    }
-    if (strchr(text, '.') != NULL && strchr(text, ' ') == NULL) {
-        return TRUE;
-    }
-    return FALSE;
-}
+#include "command.h"
+#include "tab.h"
+#include "keys.h"
+#include "util.h"
+#include "config.h"
 
 static void on_entry_activate(GtkEntry *entry, gpointer user_data) {
     AppState *state = (AppState *)user_data;
@@ -33,8 +13,8 @@ static void on_entry_activate(GtkEntry *entry, gpointer user_data) {
             const char *url_part = text + 5;
             while (*url_part == ' ') url_part++;
             if (*url_part != '\0') {
-                g_autofree gchar *final_url = tab_manager_normalize_url(url_part);
-                WebKitWebView *current_wv = get_active_web_view(GTK_NOTEBOOK(state->notebook));
+                g_autofree gchar *final_url = util_normalize_url(url_part);
+                WebKitWebView *current_wv = tab_manager_get_active_web_view(GTK_NOTEBOOK(state->notebook));
                 if (current_wv) {
                     webkit_web_view_load_uri(current_wv, final_url);
                 }
@@ -43,8 +23,8 @@ static void on_entry_activate(GtkEntry *entry, gpointer user_data) {
             const char *url_part = text + 2;
             while (*url_part == ' ') url_part++;
             if (*url_part != '\0') {
-                g_autofree gchar *final_url = tab_manager_normalize_url(url_part);
-                WebKitWebView *current_wv = get_active_web_view(GTK_NOTEBOOK(state->notebook));
+                g_autofree gchar *final_url = util_normalize_url(url_part);
+                WebKitWebView *current_wv = tab_manager_get_active_web_view(GTK_NOTEBOOK(state->notebook));
                 if (current_wv) {
                     webkit_web_view_load_uri(current_wv, final_url);
                 }
@@ -52,23 +32,23 @@ static void on_entry_activate(GtkEntry *entry, gpointer user_data) {
         } else if (g_str_has_prefix(text, "newtab ")) {
             const char *url_part = text + 7;
             while (*url_part == ' ') url_part++;
-            tab_manager_add_tab(state->notebook, *url_part != '\0' ? url_part : "https://swisscows.com", G_CALLBACK(on_key_pressed), state);
+            tab_manager_add_tab(state->notebook, *url_part != '\0' ? url_part : PEREGRINE_DEFAULT_URL, G_CALLBACK(on_key_pressed), state);
         } else if (g_str_has_prefix(text, "nt ")) {
             const char *url_part = text + 3;
             while (*url_part == ' ') url_part++;
-            tab_manager_add_tab(state->notebook, *url_part != '\0' ? url_part : "https://swisscows.com", G_CALLBACK(on_key_pressed), state);
+            tab_manager_add_tab(state->notebook, *url_part != '\0' ? url_part : PEREGRINE_DEFAULT_URL, G_CALLBACK(on_key_pressed), state);
         } else if (g_str_equal(text, "newtab") || g_str_equal(text, "nt")) {
-            tab_manager_add_tab(state->notebook, "https://swisscows.com", G_CALLBACK(on_key_pressed), state);
+            tab_manager_add_tab(state->notebook, PEREGRINE_DEFAULT_URL, G_CALLBACK(on_key_pressed), state);
         } else if (g_str_equal(text, "closetab") || g_str_equal(text, "close") || g_str_equal(text, "ct")) {
             tab_manager_close_current_tab(state->notebook, state->window);
-        } else if (is_bare_url(text)) {
+        } else if (util_is_bare_url(text)) {
             tab_manager_add_tab(state->notebook, text, G_CALLBACK(on_key_pressed), state);
         }
     }
 
     gtk_editable_set_text(GTK_EDITABLE(entry), "");
     gtk_widget_set_visible(state->command_bar, FALSE);
-    WebKitWebView *current_wv = get_active_web_view(GTK_NOTEBOOK(state->notebook));
+    WebKitWebView *current_wv = tab_manager_get_active_web_view(GTK_NOTEBOOK(state->notebook));
     if (current_wv) {
         gtk_widget_grab_focus(GTK_WIDGET(current_wv));
     }
@@ -85,7 +65,7 @@ gboolean on_key_pressed(GtkEventControllerKey *controller,
     if (!bar_visible) {
         if ((state_mask & GDK_CONTROL_MASK) != 0) {
             if (keyval == GDK_KEY_t || keyval == GDK_KEY_T) {
-                tab_manager_add_tab(state->notebook, "https://swisscows.com", G_CALLBACK(on_key_pressed), state);
+                tab_manager_add_tab(state->notebook, PEREGRINE_DEFAULT_URL, G_CALLBACK(on_key_pressed), state);
                 return TRUE;
             } else if (keyval == GDK_KEY_w || keyval == GDK_KEY_W) {
                 tab_manager_close_current_tab(state->notebook, state->window);
@@ -100,14 +80,14 @@ gboolean on_key_pressed(GtkEventControllerKey *controller,
             return TRUE;
         }
 
-        if (vim_bindings_handle_key(GTK_NOTEBOOK(state->notebook), state->command_bar, keyval, state_mask)) {
+        if (keys_handle_key(GTK_NOTEBOOK(state->notebook), state->command_bar, keyval, state_mask)) {
             return TRUE;
         }
     } else {
         if (keyval == GDK_KEY_Escape) {
             gtk_editable_set_text(GTK_EDITABLE(state->entry), "");
             gtk_widget_set_visible(state->command_bar, FALSE);
-            WebKitWebView *current_wv = get_active_web_view(GTK_NOTEBOOK(state->notebook));
+            WebKitWebView *current_wv = tab_manager_get_active_web_view(GTK_NOTEBOOK(state->notebook));
             if (current_wv) {
                 gtk_widget_grab_focus(GTK_WIDGET(current_wv));
             }
