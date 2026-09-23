@@ -1,12 +1,27 @@
 #include "command_bar.h"
 #include "tab_manager.h"
 #include "vim_bindings.h"
+#include <string.h>
 
 static WebKitWebView *get_active_web_view(GtkNotebook *notebook) {
     int current_page = gtk_notebook_get_current_page(notebook);
     if (current_page < 0) return NULL;
     GtkWidget *child = gtk_notebook_get_nth_page(notebook, current_page);
     return WEBKIT_WEB_VIEW(child);
+}
+
+static gboolean is_bare_url(const char *text) {
+    if (!text || *text == '\0') return FALSE;
+    if (g_str_has_prefix(text, "http://") || 
+        g_str_has_prefix(text, "https://") || 
+        g_str_has_prefix(text, "file://") ||
+        g_str_has_prefix(text, "www.")) {
+        return TRUE;
+    }
+    if (strchr(text, '.') != NULL && strchr(text, ' ') == NULL) {
+        return TRUE;
+    }
+    return FALSE;
 }
 
 static void on_entry_activate(GtkEntry *entry, gpointer user_data) {
@@ -46,6 +61,8 @@ static void on_entry_activate(GtkEntry *entry, gpointer user_data) {
             tab_manager_add_tab(state->notebook, "https://swisscows.com", G_CALLBACK(on_key_pressed), state);
         } else if (g_str_equal(text, "closetab") || g_str_equal(text, "close") || g_str_equal(text, "ct")) {
             tab_manager_close_current_tab(state->notebook, state->window);
+        } else if (is_bare_url(text)) {
+            tab_manager_add_tab(state->notebook, text, G_CALLBACK(on_key_pressed), state);
         }
     }
 
