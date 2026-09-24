@@ -42,6 +42,20 @@ gboolean keys_handle_key(GtkNotebook *notebook, GtkWidget *command_bar, guint ke
     WebKitWebView *web_view = tab_manager_get_active_web_view(notebook);
     gboolean ctrl = (state_mask & GDK_CONTROL_MASK) != 0;
     gboolean shift = (state_mask & GDK_SHIFT_MASK) != 0;
+    gboolean alt = (state_mask & GDK_ALT_MASK) != 0;
+
+    if (alt) {
+        g_pending = FALSE;
+        if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
+            int target_page = keyval - GDK_KEY_1;
+            int n_pages = gtk_notebook_get_n_pages(notebook);
+            if (target_page < n_pages) {
+                gtk_notebook_set_current_page(notebook, target_page);
+            }
+            return TRUE;
+        }
+        return FALSE;
+    }
 
     if (g_hint_mode) {
         if (keyval == GDK_KEY_Escape || (ctrl && keyval == GDK_KEY_bracketleft)) {
@@ -65,6 +79,25 @@ gboolean keys_handle_key(GtkNotebook *notebook, GtkWidget *command_bar, guint ke
         }
         if (keyval == GDK_KEY_u || keyval == GDK_KEY_U) {
             if (web_view) webkit_web_view_evaluate_javascript(web_view, "window.scrollBy(0, -window.innerHeight / 2);", -1, NULL, NULL, NULL, NULL, NULL);
+            return TRUE;
+        }
+        if (keyval == GDK_KEY_Tab) {
+            int n_pages = gtk_notebook_get_n_pages(notebook);
+            int current = gtk_notebook_get_current_page(notebook);
+            if (shift) {
+                int target = (current > 0) ? current - 1 : n_pages - 1;
+                gtk_notebook_set_current_page(notebook, target);
+            } else {
+                int target = (current < n_pages - 1) ? current + 1 : 0;
+                gtk_notebook_set_current_page(notebook, target);
+            }
+            return TRUE;
+        }
+        if (keyval == GDK_KEY_ISO_Left_Tab) {
+            int n_pages = gtk_notebook_get_n_pages(notebook);
+            int current = gtk_notebook_get_current_page(notebook);
+            int target = (current > 0) ? current - 1 : n_pages - 1;
+            gtk_notebook_set_current_page(notebook, target);
             return TRUE;
         }
         return FALSE;
