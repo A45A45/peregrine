@@ -86,7 +86,7 @@ GtkWidget *tab_manager_add_tab(GtkWidget *notebook, const char *url, GCallback k
 
     if (key_press_cb) {
         GtkEventController *key_controller = gtk_event_controller_key_new();
-        gtk_event_controller_set_propagation_phase(key_controller, GTK_PHASE_CAPTURE);
+        gtk_event_controller_set_propagation_phase(key_controller, GTK_PHASE_BUBBLE);
         g_signal_connect(key_controller, "key-pressed", key_press_cb, user_data);
         gtk_widget_add_controller(web_view, key_controller);
     }

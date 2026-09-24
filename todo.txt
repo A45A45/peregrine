@@ -1,0 +1,4 @@
+Cookie and storage handling
+Adblock
+Improve vim
+Extensions, lua or python hooks or custom protocols or plugins

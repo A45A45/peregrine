@@ -1,4 +1,5 @@
 #include "webview.h"
+#include "storage.h"
 #include <jsc/jsc.h>
 
 typedef struct {
@@ -15,6 +16,7 @@ static void on_script_message_received(WebKitUserContentManager *manager, JSCVal
 
 GtkWidget *webview_create(void) {
     GtkWidget *web_view = webkit_web_view_new();
+
     gtk_widget_set_vexpand(web_view, TRUE);
     gtk_widget_set_hexpand(web_view, TRUE);
 
@@ -28,24 +30,25 @@ GtkWidget *webview_create(void) {
 
     const char *script_source =
         "let __peregrine_last_editable = false;"
-        "window.addEventListener('focusin', (e) => {"
-        "    const tag = e.target.tagName;"
-        "    const isEditable = e.target.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';"
+        "function checkEditable() {"
+        "    let el = document.activeElement;"
+        "    while (el && el.shadowRoot && el.shadowRoot.activeElement) {"
+        "        el = el.shadowRoot.activeElement;"
+        "    }"
+        "    if (!el) return false;"
+        "    const tag = el.tagName;"
+        "    return el.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.getAttribute('role') === 'textbox' || el.getAttribute('contenteditable') === 'true';"
+        "}"
+        "function updateFocus() {"
+        "    const isEditable = checkEditable();"
         "    if (isEditable !== __peregrine_last_editable) {"
         "        __peregrine_last_editable = isEditable;"
         "        window.webkit.messageHandlers.peregrineFocus.postMessage(isEditable ? '1' : '0');"
         "    }"
-        "}, true);"
-        "window.addEventListener('focusout', (e) => {"
-        "    setTimeout(() => {"
-        "        if (!document.activeElement || document.activeElement === document.body) {"
-        "            if (__peregrine_last_editable) {"
-        "                __peregrine_last_editable = false;"
-        "                window.webkit.messageHandlers.peregrineFocus.postMessage('0');"
-        "            }"
-        "        }"
-        "    }, 0);"
-        "}, true);";
+        "}"
+        "window.addEventListener('focusin', updateFocus, true);"
+        "window.addEventListener('focusout', () => { setTimeout(updateFocus, 0); }, true);"
+        "document.addEventListener('selectionchange', updateFocus, true);";
 
     WebKitUserScript *user_script = webkit_user_script_new(
         script_source,
