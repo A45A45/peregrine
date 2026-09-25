@@ -15,6 +15,7 @@ add_executable(peregrine
     src/tab.c
     src/webview.c
     src/storage.c
+    src/adblock.c
     src/command.c
     src/keys.c
     src/hint.c

@@ -1,5 +1,6 @@
 #include "webview.h"
 #include "storage.h"
+#include "adblock.h"
 #include <jsc/jsc.h>
 
 typedef struct {
@@ -15,7 +16,10 @@ static void on_script_message_received(WebKitUserContentManager *manager, JSCVal
 }
 
 GtkWidget *webview_create(void) {
-    GtkWidget *web_view = webkit_web_view_new();
+    WebKitUserContentManager *ucm = webkit_user_content_manager_new();
+    GtkWidget *web_view = g_object_new(WEBKIT_TYPE_WEB_VIEW,
+                                        "user-content-manager", ucm,
+                                        NULL);
 
     gtk_widget_set_vexpand(web_view, TRUE);
     gtk_widget_set_hexpand(web_view, TRUE);
@@ -24,9 +28,10 @@ GtkWidget *webview_create(void) {
     ctx->editable_focused = FALSE;
     g_object_set_data_full(G_OBJECT(web_view), "webview-context", ctx, g_free);
 
-    WebKitUserContentManager *ucm = webkit_web_view_get_user_content_manager(WEBKIT_WEB_VIEW(web_view));
     webkit_user_content_manager_register_script_message_handler(ucm, "peregrineFocus", NULL);
     g_signal_connect(ucm, "script-message-received::peregrineFocus", G_CALLBACK(on_script_message_received), ctx);
+
+    adblock_attach_filters(ucm);
 
     const char *script_source =
         "let __peregrine_last_editable = false;"
