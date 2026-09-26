@@ -1,2 +1,5 @@
-cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build
+cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$HOME/.local
+cmake --build build
+cmake --install build
+
 

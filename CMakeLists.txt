@@ -25,3 +25,17 @@ add_executable(peregrine
 target_include_directories(peregrine PRIVATE ${GTK4_INCLUDE_DIRS} ${WEBKIT_INCLUDE_DIRS})
 target_link_directories(peregrine PRIVATE ${GTK4_LIBRARY_DIRS} ${WEBKIT_LIBRARY_DIRS})
 target_link_libraries(peregrine PRIVATE ${GTK4_LIBRARIES} ${WEBKIT_LIBRARIES})
+
+# Installation rules
+install(TARGETS peregrine
+    RUNTIME DESTINATION bin
+)
+
+install(FILES data/org.peregrine.browser.desktop
+    DESTINATION share/applications
+)
+
+install(FILES data/peregrine.svg
+    DESTINATION share/icons/hicolor/scalable/apps
+    RENAME org.peregrine.browser.svg
+)
