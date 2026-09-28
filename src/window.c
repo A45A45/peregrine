@@ -6,7 +6,7 @@
 GtkWidget *window_create(GtkApplication *app, const char *initial_url) {
     GtkWidget *window = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(window), PEREGRINE_DEFAULT_TITLE);
-    gtk_window_set_default_size(GTK_WINDOW(window), 1024, 768);
+    gtk_window_set_default_size(GTK_WINDOW(window), 1600, 800);
 
     GtkWidget *root_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_window_set_child(GTK_WINDOW(window), root_box);

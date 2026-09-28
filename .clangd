@@ -1,0 +1,17 @@
+CompileFlags:
+  Add:
+    - "-I/run/host/usr/include/webkitgtk-6.0"
+    - "-I/run/host/usr/include/gtk-4.0"
+    - "-I/run/host/usr/include/glib-2.0"
+    - "-I/run/host/usr/lib/x86_64-linux-gnu/glib-2.0/include"
+    - "-I/run/host/usr/lib/glib-2.0/include"
+    - "-I/run/host/usr/include/cairo"
+    - "-I/run/host/usr/include/pango-1.0"
+    - "-I/run/host/usr/include/harfbuzz"
+    - "-I/run/host/usr/include/gdk-pixbuf-2.0"
+    - "-I/run/host/usr/include/graphene-1.0"
+    - "-I/run/host/usr/lib/x86_64-linux-gnu/graphene-1.0/include"
+    - "-I/run/host/lib64/graphene-1.0/include"
+    - "-I/run/host/usr/include"
+    - "-I/run/host/usr/include/libsoup-3.0"
+    

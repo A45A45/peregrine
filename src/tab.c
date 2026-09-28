@@ -60,6 +60,7 @@ GtkWidget *tab_manager_create_notebook(void) {
 GtkWidget *tab_manager_add_tab(GtkWidget *notebook, const char *url, GCallback key_press_cb, gpointer user_data) {
     GtkWidget *web_view = webview_create();
 
+
     GtkWidget *tab_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
     GtkWidget *label = gtk_label_new("New Tab");
     gtk_box_append(GTK_BOX(tab_box), label);

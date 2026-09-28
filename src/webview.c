@@ -1,5 +1,4 @@
 #include "webview.h"
-#include "storage.h"
 #include "adblock.h"
 #include <jsc/jsc.h>
 
@@ -20,6 +19,7 @@ GtkWidget *webview_create(void) {
     GtkWidget *web_view = g_object_new(WEBKIT_TYPE_WEB_VIEW,
                                         "user-content-manager", ucm,
                                         NULL);
+    webkit_web_view_set_zoom_level(WEBKIT_WEB_VIEW(web_view), 1.0);
 
     gtk_widget_set_vexpand(web_view, TRUE);
     gtk_widget_set_hexpand(web_view, TRUE);
