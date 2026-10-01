@@ -1,7 +1,7 @@
 #include "webview.h"
-#include "adblock.h"
+#include "adblock_c.h"
 #include <jsc/jsc.h>
-
+#include "adblock.h"
 typedef struct {
     gboolean editable_focused;
 } WebViewContext;
@@ -12,6 +12,32 @@ static void on_script_message_received(WebKitUserContentManager *manager, JSCVal
         g_autofree gchar *str = jsc_value_to_string(result);
         ctx->editable_focused = (g_strcmp0(str, "1") == 0);
     }
+}
+
+static gboolean on_decide_policy(WebKitWebView *web_view,
+                                  WebKitPolicyDecision *decision,
+                                  WebKitPolicyDecisionType type,
+                                  gpointer user_data) {
+    if (type != WEBKIT_POLICY_DECISION_TYPE_NAVIGATION_ACTION &&
+        type != WEBKIT_POLICY_DECISION_TYPE_NEW_WINDOW_ACTION) {
+        return FALSE; /* not a navigation decision, let WebKit handle it normally */
+    }
+
+    WebKitNavigationPolicyDecision *nav_decision = WEBKIT_NAVIGATION_POLICY_DECISION(decision);
+    WebKitNavigationAction *action = webkit_navigation_policy_decision_get_navigation_action(nav_decision);
+    WebKitURIRequest *request = webkit_navigation_action_get_request(action);
+    const char *uri = webkit_uri_request_get_uri(request);
+
+    const char *source_uri = webkit_web_view_get_uri(web_view);
+    if (!source_uri) source_uri = "";
+
+    if (uri && adblock_should_block(uri, source_uri, "document")) {
+        webkit_policy_decision_ignore(decision);
+        return TRUE;
+    }
+
+    webkit_policy_decision_use(decision);
+    return TRUE;
 }
 
 GtkWidget *webview_create(void) {
@@ -30,8 +56,9 @@ GtkWidget *webview_create(void) {
 
     webkit_user_content_manager_register_script_message_handler(ucm, "peregrineFocus", NULL);
     g_signal_connect(ucm, "script-message-received::peregrineFocus", G_CALLBACK(on_script_message_received), ctx);
-
+    g_signal_connect(web_view, "decide-policy", G_CALLBACK(on_decide_policy), NULL);
     adblock_attach_filters(ucm);
+
 
     const char *script_source =
         "let __peregrine_last_editable = false;"

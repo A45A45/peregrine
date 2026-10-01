@@ -96,7 +96,6 @@ gboolean on_key_pressed(GtkEventControllerKey *controller,
     } else {
         if (keyval == GDK_KEY_Escape) {
             gtk_editable_set_text(GTK_EDITABLE(state->entry), "");
-            gtk_editable_set_text(GTK_EDITABLE(state->entry), "");
             gtk_widget_set_visible(state->command_bar, FALSE);
             WebKitWebView *current_wv = get_active_web_view(GTK_NOTEBOOK(state->notebook));
             if (current_wv) {

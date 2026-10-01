@@ -1,0 +1,13 @@
+/home/nep/peregrine/adblock-ffi/target/release/deps/addr-439b4f0e73bc400b.d: /home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/lib.rs /home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/dns.rs /home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/domain.rs /home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/email.rs /home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/error.rs /home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/matcher.rs /home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/parser.rs
+
+/home/nep/peregrine/adblock-ffi/target/release/deps/libaddr-439b4f0e73bc400b.rlib: /home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/lib.rs /home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/dns.rs /home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/domain.rs /home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/email.rs /home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/error.rs /home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/matcher.rs /home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/parser.rs
+
+/home/nep/peregrine/adblock-ffi/target/release/deps/libaddr-439b4f0e73bc400b.rmeta: /home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/lib.rs /home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/dns.rs /home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/domain.rs /home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/email.rs /home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/error.rs /home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/matcher.rs /home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/parser.rs
+
+/home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/lib.rs:
+/home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/dns.rs:
+/home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/domain.rs:
+/home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/email.rs:
+/home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/error.rs:
+/home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/matcher.rs:
+/home/nep/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/addr-0.15.6/src/parser.rs:

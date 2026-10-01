@@ -1,0 +1,13 @@
+[package]
+name = "adblock_ffi"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "adblock_ffi"
+crate-type = ["staticlib", "cdylib"]
+
+[dependencies]
+adblock = { git = "https://github.com/brave/adblock-rust" }
+libc = "0.2"
+once_cell = "1.19"
