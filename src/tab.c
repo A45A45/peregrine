@@ -14,6 +14,13 @@ static void on_switch_page(GtkNotebook *notebook, GtkWidget *page, guint page_nu
     }
 }
 
+static void on_web_view_map(GtkWidget *web_view, gpointer user_data) {
+    gchar *final_url = (gchar *)user_data;
+    webkit_web_view_load_uri(WEBKIT_WEB_VIEW(web_view), final_url);
+    g_free(final_url);
+    g_signal_handlers_disconnect_by_func(web_view, on_web_view_map, user_data);
+}
+
 static void on_title_changed(WebKitWebView *web_view, GParamSpec *pspec, gpointer user_data) {
     GtkLabel *label = GTK_LABEL(user_data);
     const char *title = webkit_web_view_get_title(web_view);
@@ -99,8 +106,13 @@ GtkWidget *tab_manager_add_tab(GtkWidget *notebook, const char *url, GCallback k
     gtk_notebook_set_current_page(GTK_NOTEBOOK(notebook), page_num);
     gtk_widget_grab_focus(web_view);
 
-    g_autofree gchar *final_url = util_normalize_url(url);
-    webkit_web_view_load_uri(WEBKIT_WEB_VIEW(web_view), final_url);
+    gchar *final_url = util_normalize_url(url);
+    if (gtk_widget_get_mapped(web_view)) {
+        webkit_web_view_load_uri(WEBKIT_WEB_VIEW(web_view), final_url);
+        g_free(final_url);
+    } else {
+        g_signal_connect(web_view, "map", G_CALLBACK(on_web_view_map), final_url);
+    }
 
     return web_view;
 }

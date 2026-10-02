@@ -2,6 +2,8 @@
 #include "adblock_c.h"
 #include <jsc/jsc.h>
 #include "adblock.h"
+#include "ytblock.h"
+
 typedef struct {
     gboolean editable_focused;
 } WebViewContext;
@@ -45,7 +47,8 @@ GtkWidget *webview_create(void) {
     GtkWidget *web_view = g_object_new(WEBKIT_TYPE_WEB_VIEW,
                                         "user-content-manager", ucm,
                                         NULL);
-    webkit_web_view_set_zoom_level(WEBKIT_WEB_VIEW(web_view), 1.0);
+    WebKitSettings *settings = webkit_web_view_get_settings(WEBKIT_WEB_VIEW(web_view));
+    webkit_settings_set_enable_developer_extras(settings, TRUE);
 
     gtk_widget_set_vexpand(web_view, TRUE);
     gtk_widget_set_hexpand(web_view, TRUE);
@@ -90,6 +93,17 @@ GtkWidget *webview_create(void) {
     );
     webkit_user_content_manager_add_script(ucm, user_script);
     webkit_user_script_unref(user_script);
+
+    const char *yt_allow_list[] = { "https://*.youtube.com/*", "https://youtube.com/*", NULL };
+    WebKitUserScript *yt_script = webkit_user_script_new(
+        YTBLOCK_JS,
+        WEBKIT_USER_CONTENT_INJECT_TOP_FRAME,
+        WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START,
+        yt_allow_list,
+        NULL
+    );
+    webkit_user_content_manager_add_script(ucm, yt_script);
+    webkit_user_script_unref(yt_script);
 
     return web_view;
 }
