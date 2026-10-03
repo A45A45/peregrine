@@ -22,7 +22,7 @@ static gboolean on_decide_policy(WebKitWebView *web_view,
                                   gpointer user_data) {
     if (type != WEBKIT_POLICY_DECISION_TYPE_NAVIGATION_ACTION &&
         type != WEBKIT_POLICY_DECISION_TYPE_NEW_WINDOW_ACTION) {
-        return FALSE; /* not a navigation decision, let WebKit handle it normally */
+        return FALSE;
     }
 
     WebKitNavigationPolicyDecision *nav_decision = WEBKIT_NAVIGATION_POLICY_DECISION(decision);

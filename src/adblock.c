@@ -4,7 +4,6 @@
 #include <glib/gstdio.h>
 #include <string.h>
 
-/* ---- Brave (adblock-rust) engine: EasyList .txt, navigation-level blocking ---- */
 
 static void load_easylist_filters(void) {
     g_autofree gchar *config_dir = g_build_filename(g_get_user_config_dir(), "peregrine", "filters", NULL);
@@ -38,10 +37,9 @@ static void load_easylist_filters(void) {
     g_ptr_array_free(lists_array, TRUE);
 }
 
-/* ---- WebKit native content filters: .json, real per-resource blocking ---- */
 
 static WebKitUserContentFilterStore *s_filter_store = NULL;
-static GPtrArray *s_native_filters = NULL; /* owns WebKitUserContentFilter refs */
+static GPtrArray *s_native_filters = NULL;
 
 static void on_filter_loaded(WebKitUserContentFilterStore *store, GAsyncResult *result, gpointer user_data) {
     GError *error = NULL;
@@ -116,8 +114,6 @@ static void load_native_filters(void) {
     g_dir_close(dir);
 }
 
-/* ---- Public API ---- */
-
 void adblock_init(void) {
     if (!s_native_filters) {
         s_native_filters = g_ptr_array_new_with_free_func((GDestroyNotify)webkit_user_content_filter_unref);
@@ -132,7 +128,6 @@ void adblock_reload_filters(void) {
     }
     load_easylist_filters();
     load_native_filters();
-    /* Note: tabs already open keep their old native filters until reopened. */
 }
 
 void adblock_attach_filters(WebKitUserContentManager *ucm) {
