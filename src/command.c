@@ -53,6 +53,11 @@ static void on_entry_activate(GtkEntry *entry, gpointer user_data) {
             adblock_reload_filters();
         } else if (util_is_bare_url(text)) {
             tab_manager_add_tab(state->notebook, text, G_CALLBACK(on_key_pressed), state);
+        } else {
+            g_autofree gchar *search_url = util_build_search_url(text);
+            if (search_url) {
+                tab_manager_add_tab(state->notebook, search_url, G_CALLBACK(on_key_pressed), state);
+            }
         }
     }
 

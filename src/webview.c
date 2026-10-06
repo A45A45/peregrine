@@ -15,7 +15,7 @@ static void on_script_message_received(WebKitUserContentManager *manager, JSCVal
     }
 }
 
-static gchar *youtube_to_piped_url(const char *uri) {
+static gchar *youtube_to_invidious_url(const char *uri) {
     if (!uri) return NULL;
 
     GUri *parsed = g_uri_parse(uri, G_URI_FLAGS_NONE, NULL);
@@ -30,10 +30,10 @@ static gchar *youtube_to_piped_url(const char *uri) {
 
         if (g_str_equal(host, "youtu.be") && path && *path == '/' && path[1] != '\0') {
             /* youtu.be/<id> -> /watch?v=<id> */
-            result = g_strdup_printf("%s/watch?v=%s", PEREGRINE_PIPED_INSTANCE, path + 1);
+            result = g_strdup_printf("%s/watch?v=%s", PEREGRINE_INVIDIOUS_INSTANCE, path + 1);
         } else {
             result = g_strdup_printf("%s%s%s%s",
-                                      PEREGRINE_PIPED_INSTANCE,
+                                      PEREGRINE_INVIDIOUS_INSTANCE,
                                       path ? path : "",
                                       query ? "?" : "",
                                       query ? query : "");
@@ -58,10 +58,10 @@ static gboolean on_decide_policy(WebKitWebView *web_view,
     WebKitURIRequest *request = webkit_navigation_action_get_request(action);
     const char *uri = webkit_uri_request_get_uri(request);
 
-    g_autofree gchar *piped_url = youtube_to_piped_url(uri);
-    if (piped_url) {
+    g_autofree gchar *invidious_url = youtube_to_invidious_url(uri);
+    if (invidious_url) {
         webkit_policy_decision_ignore(decision);
-        webkit_web_view_load_uri(web_view, piped_url);
+        webkit_web_view_load_uri(web_view, invidious_url);
         return TRUE;
     }
 

@@ -6,8 +6,8 @@ char *util_normalize_url(const char *url) {
     if (!url || *url == '\0') {
         return g_strdup(PEREGRINE_FALLBACK_URL);
     }
-    if (g_str_has_prefix(url, "http://") || 
-        g_str_has_prefix(url, "https://") || 
+    if (g_str_has_prefix(url, "http://") ||
+        g_str_has_prefix(url, "https://") ||
         g_str_has_prefix(url, "file://")) {
         return g_strdup(url);
     }
@@ -16,8 +16,8 @@ char *util_normalize_url(const char *url) {
 
 gboolean util_is_bare_url(const char *text) {
     if (!text || *text == '\0') return FALSE;
-    if (g_str_has_prefix(text, "http://") || 
-        g_str_has_prefix(text, "https://") || 
+    if (g_str_has_prefix(text, "http://") ||
+        g_str_has_prefix(text, "https://") ||
         g_str_has_prefix(text, "file://") ||
         g_str_has_prefix(text, "www.")) {
         return TRUE;
@@ -26,4 +26,10 @@ gboolean util_is_bare_url(const char *text) {
         return TRUE;
     }
     return FALSE;
+}
+
+char *util_build_search_url(const char *query) {
+    if (!query || *query == '\0') return NULL;
+    g_autofree gchar *encoded = g_uri_escape_string(query, NULL, FALSE);
+    return g_strdup_printf(PEREGRINE_SEARCH_URL, encoded);
 }
