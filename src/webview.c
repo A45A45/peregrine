@@ -1,8 +1,7 @@
 #include "webview.h"
-#include "adblock_c.h"
-#include <jsc/jsc.h>
 #include "adblock.h"
-#include "ytblock.h"
+#include "config.h"
+#include <jsc/jsc.h>
 
 typedef struct {
     gboolean editable_focused;
@@ -14,6 +13,35 @@ static void on_script_message_received(WebKitUserContentManager *manager, JSCVal
         g_autofree gchar *str = jsc_value_to_string(result);
         ctx->editable_focused = (g_strcmp0(str, "1") == 0);
     }
+}
+
+static gchar *youtube_to_piped_url(const char *uri) {
+    if (!uri) return NULL;
+
+    GUri *parsed = g_uri_parse(uri, G_URI_FLAGS_NONE, NULL);
+    if (!parsed) return NULL;
+
+    const char *host = g_uri_get_host(parsed);
+    gchar *result = NULL;
+
+    if (host && (g_str_has_suffix(host, "youtube.com") || g_str_equal(host, "youtu.be"))) {
+        const char *path = g_uri_get_path(parsed);
+        const char *query = g_uri_get_query(parsed);
+
+        if (g_str_equal(host, "youtu.be") && path && *path == '/' && path[1] != '\0') {
+            /* youtu.be/<id> -> /watch?v=<id> */
+            result = g_strdup_printf("%s/watch?v=%s", PEREGRINE_PIPED_INSTANCE, path + 1);
+        } else {
+            result = g_strdup_printf("%s%s%s%s",
+                                      PEREGRINE_PIPED_INSTANCE,
+                                      path ? path : "",
+                                      query ? "?" : "",
+                                      query ? query : "");
+        }
+    }
+
+    g_uri_unref(parsed);
+    return result;
 }
 
 static gboolean on_decide_policy(WebKitWebView *web_view,
@@ -29,6 +57,13 @@ static gboolean on_decide_policy(WebKitWebView *web_view,
     WebKitNavigationAction *action = webkit_navigation_policy_decision_get_navigation_action(nav_decision);
     WebKitURIRequest *request = webkit_navigation_action_get_request(action);
     const char *uri = webkit_uri_request_get_uri(request);
+
+    g_autofree gchar *piped_url = youtube_to_piped_url(uri);
+    if (piped_url) {
+        webkit_policy_decision_ignore(decision);
+        webkit_web_view_load_uri(web_view, piped_url);
+        return TRUE;
+    }
 
     const char *source_uri = webkit_web_view_get_uri(web_view);
     if (!source_uri) source_uri = "";
@@ -47,8 +82,6 @@ GtkWidget *webview_create(void) {
     GtkWidget *web_view = g_object_new(WEBKIT_TYPE_WEB_VIEW,
                                         "user-content-manager", ucm,
                                         NULL);
-    WebKitSettings *settings = webkit_web_view_get_settings(WEBKIT_WEB_VIEW(web_view));
-    webkit_settings_set_enable_developer_extras(settings, TRUE);
 
     gtk_widget_set_vexpand(web_view, TRUE);
     gtk_widget_set_hexpand(web_view, TRUE);
@@ -60,8 +93,8 @@ GtkWidget *webview_create(void) {
     webkit_user_content_manager_register_script_message_handler(ucm, "peregrineFocus", NULL);
     g_signal_connect(ucm, "script-message-received::peregrineFocus", G_CALLBACK(on_script_message_received), ctx);
     g_signal_connect(web_view, "decide-policy", G_CALLBACK(on_decide_policy), NULL);
-    adblock_attach_filters(ucm);
 
+    adblock_attach_filters(ucm);
 
     const char *script_source =
         "let __peregrine_last_editable = false;"
@@ -93,17 +126,6 @@ GtkWidget *webview_create(void) {
     );
     webkit_user_content_manager_add_script(ucm, user_script);
     webkit_user_script_unref(user_script);
-
-    const char *yt_allow_list[] = { "https://*.youtube.com/*", "https://youtube.com/*", NULL };
-    WebKitUserScript *yt_script = webkit_user_script_new(
-        YTBLOCK_JS,
-        WEBKIT_USER_CONTENT_INJECT_TOP_FRAME,
-        WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START,
-        yt_allow_list,
-        NULL
-    );
-    webkit_user_content_manager_add_script(ucm, yt_script);
-    webkit_user_script_unref(yt_script);
 
     return web_view;
 }

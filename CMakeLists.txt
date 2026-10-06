@@ -25,7 +25,6 @@ add_executable(peregrine
     src/keys.c
     src/hint.c
     src/util.c
-    src/ytblock.c
 )
 
 add_dependencies(peregrine adblock_rust_lib)
