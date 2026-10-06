@@ -2,6 +2,7 @@
 #include "tab.h"
 #include "keys.h"
 #include "adblock.h"
+#include "history.h"
 #include "util.h"
 #include "config.h"
 
@@ -12,9 +13,44 @@ static WebKitWebView *get_active_web_view(GtkNotebook *notebook) {
     return WEBKIT_WEB_VIEW(child);
 }
 
+static void open_history_page(AppState *state, const char *query) {
+    g_autofree gchar *html = history_build_page(query);
+    g_autofree gchar *cache_dir = g_build_filename(g_get_user_cache_dir(), "peregrine", NULL);
+    g_mkdir_with_parents(cache_dir, 0700);
+    g_autofree gchar *tmp_path = g_build_filename(cache_dir, "history.html", NULL);
+
+    if (g_file_set_contents(tmp_path, html, -1, NULL)) {
+        g_autofree gchar *file_uri = g_strdup_printf("file://%s", tmp_path);
+        tab_manager_add_tab(state->notebook, file_uri, G_CALLBACK(on_key_pressed), state);
+    }
+}
+
 static void on_entry_activate(GtkEntry *entry, gpointer user_data) {
     AppState *state = (AppState *)user_data;
     const char *text = gtk_editable_get_text(GTK_EDITABLE(entry));
+
+    if (state->find_mode) {
+        state->find_mode = FALSE;
+        gtk_label_set_text(GTK_LABEL(state->prompt_label), ":");
+
+        if (text && *text != '\0') {
+            WebKitWebView *current_wv = get_active_web_view(GTK_NOTEBOOK(state->notebook));
+            if (current_wv) {
+                WebKitFindController *fc = webkit_web_view_get_find_controller(current_wv);
+                webkit_find_controller_search(fc, text,
+                    WEBKIT_FIND_OPTIONS_CASE_INSENSITIVE | WEBKIT_FIND_OPTIONS_WRAP_AROUND,
+                    G_MAXUINT);
+            }
+        }
+
+        gtk_editable_set_text(GTK_EDITABLE(entry), "");
+        gtk_widget_set_visible(state->command_bar, FALSE);
+        WebKitWebView *current_wv = get_active_web_view(GTK_NOTEBOOK(state->notebook));
+        if (current_wv) {
+            gtk_widget_grab_focus(GTK_WIDGET(current_wv));
+        }
+        return;
+    }
 
     if (text && *text != '\0') {
         if (g_str_has_prefix(text, "open ")) {
@@ -51,6 +87,12 @@ static void on_entry_activate(GtkEntry *entry, gpointer user_data) {
             tab_manager_close_current_tab(state->notebook, state->window);
         } else if (g_str_equal(text, "reloadfilters") || g_str_equal(text, "rf")) {
             adblock_reload_filters();
+        } else if (g_str_has_prefix(text, "history ") || g_str_has_prefix(text, "hist ")) {
+            const char *query = text + (g_str_has_prefix(text, "history ") ? 8 : 5);
+            while (*query == ' ') query++;
+            open_history_page(state, *query != '\0' ? query : NULL);
+        } else if (g_str_equal(text, "history") || g_str_equal(text, "hist")) {
+            open_history_page(state, NULL);
         } else if (util_is_bare_url(text)) {
             tab_manager_add_tab(state->notebook, text, G_CALLBACK(on_key_pressed), state);
         } else {
@@ -89,6 +131,17 @@ gboolean on_key_pressed(GtkEventControllerKey *controller,
         }
 
         if (keyval == GDK_KEY_colon) {
+            state->find_mode = FALSE;
+            gtk_label_set_text(GTK_LABEL(state->prompt_label), ":");
+            gtk_widget_set_visible(state->command_bar, TRUE);
+            gtk_widget_grab_focus(state->entry);
+            gtk_editable_set_text(GTK_EDITABLE(state->entry), "");
+            return TRUE;
+        }
+
+        if (keyval == GDK_KEY_slash) {
+            state->find_mode = TRUE;
+            gtk_label_set_text(GTK_LABEL(state->prompt_label), "/");
             gtk_widget_set_visible(state->command_bar, TRUE);
             gtk_widget_grab_focus(state->entry);
             gtk_editable_set_text(GTK_EDITABLE(state->entry), "");
@@ -100,6 +153,8 @@ gboolean on_key_pressed(GtkEventControllerKey *controller,
         }
     } else {
         if (keyval == GDK_KEY_Escape) {
+            state->find_mode = FALSE;
+            gtk_label_set_text(GTK_LABEL(state->prompt_label), ":");
             gtk_editable_set_text(GTK_EDITABLE(state->entry), "");
             gtk_widget_set_visible(state->command_bar, FALSE);
             WebKitWebView *current_wv = get_active_web_view(GTK_NOTEBOOK(state->notebook));
@@ -134,6 +189,8 @@ AppState *command_bar_init(GtkWidget *window, GtkWidget *notebook, GtkWidget *ro
     state->notebook = notebook;
     state->command_bar = command_bar;
     state->entry = entry;
+    state->prompt_label = prompt_label;
+    state->find_mode = FALSE;
 
     g_signal_connect_swapped(window, "destroy", G_CALLBACK(g_free), state);
     g_signal_connect(G_OBJECT(entry), "activate", G_CALLBACK(on_entry_activate), state);

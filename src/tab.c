@@ -1,6 +1,7 @@
 #include "tab.h"
 #include "webview.h"
 #include "util.h"
+#include "history.h"
 
 typedef struct {
     GtkWidget *notebook;
@@ -37,6 +38,14 @@ static void on_title_changed(WebKitWebView *web_view, GParamSpec *pspec, gpointe
     }
 }
 
+static void on_load_changed(WebKitWebView *web_view, WebKitLoadEvent load_event, gpointer user_data) {
+    if (load_event == WEBKIT_LOAD_FINISHED) {
+        const char *uri = webkit_web_view_get_uri(web_view);
+        const char *title = webkit_web_view_get_title(web_view);
+        history_record(uri, title);
+    }
+}
+
 static void on_close_clicked(GtkButton *button, gpointer user_data) {
     TabContext *ctx = (TabContext *)user_data;
     int n_pages = gtk_notebook_get_n_pages(GTK_NOTEBOOK(ctx->notebook));
@@ -67,7 +76,6 @@ GtkWidget *tab_manager_create_notebook(void) {
 GtkWidget *tab_manager_add_tab(GtkWidget *notebook, const char *url, GCallback key_press_cb, gpointer user_data) {
     GtkWidget *web_view = webview_create();
 
-
     GtkWidget *tab_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
     GtkWidget *label = gtk_label_new("New Tab");
     gtk_box_append(GTK_BOX(tab_box), label);
@@ -91,6 +99,7 @@ GtkWidget *tab_manager_add_tab(GtkWidget *notebook, const char *url, GCallback k
 
     g_signal_connect(close_btn, "clicked", G_CALLBACK(on_close_clicked), ctx);
     g_signal_connect(web_view, "notify::title", G_CALLBACK(on_title_changed), label);
+    g_signal_connect(web_view, "load-changed", G_CALLBACK(on_load_changed), NULL);
 
     if (key_press_cb) {
         GtkEventController *key_controller = gtk_event_controller_key_new();

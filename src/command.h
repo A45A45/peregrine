@@ -9,6 +9,8 @@ typedef struct {
     GtkWidget *notebook;
     GtkWidget *command_bar;
     GtkWidget *entry;
+    GtkWidget *prompt_label;
+    gboolean find_mode;
 } AppState;
 
 AppState *command_bar_init(GtkWidget *window, GtkWidget *notebook, GtkWidget *root_box);

@@ -4,6 +4,7 @@
 #include <jsc/jsc.h>
 
 static gboolean g_pending = FALSE;
+static gboolean g_yank_pending = FALSE;
 static gboolean g_hint_mode = FALSE;
 
 static void keys_enter_hint_mode(WebKitWebView *web_view) {
@@ -32,6 +33,7 @@ static void on_hint_char_evaluated(GObject *source, GAsyncResult *res, gpointer 
 gboolean keys_handle_key(GtkNotebook *notebook, GtkWidget *command_bar, guint keyval, GdkModifierType state_mask) {
     if (gtk_widget_get_visible(command_bar) || tab_manager_is_editable_focused(notebook)) {
         g_pending = FALSE;
+        g_yank_pending = FALSE;
         if (g_hint_mode) {
             WebKitWebView *web_view = tab_manager_get_active_web_view(notebook);
             keys_exit_hint_mode(web_view);
@@ -46,6 +48,7 @@ gboolean keys_handle_key(GtkNotebook *notebook, GtkWidget *command_bar, guint ke
 
     if (alt) {
         g_pending = FALSE;
+        g_yank_pending = FALSE;
         if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
             int target_page = keyval - GDK_KEY_1;
             int n_pages = gtk_notebook_get_n_pages(notebook);
@@ -73,12 +76,34 @@ gboolean keys_handle_key(GtkNotebook *notebook, GtkWidget *command_bar, guint ke
 
     if (ctrl) {
         g_pending = FALSE;
+        g_yank_pending = FALSE;
+
         if (keyval == GDK_KEY_d || keyval == GDK_KEY_D) {
             if (web_view) webkit_web_view_evaluate_javascript(web_view, "window.scrollBy(0, window.innerHeight / 2);", -1, NULL, NULL, NULL, NULL, NULL);
             return TRUE;
         }
         if (keyval == GDK_KEY_u || keyval == GDK_KEY_U) {
             if (web_view) webkit_web_view_evaluate_javascript(web_view, "window.scrollBy(0, -window.innerHeight / 2);", -1, NULL, NULL, NULL, NULL, NULL);
+            return TRUE;
+        }
+        if (keyval == GDK_KEY_plus || keyval == GDK_KEY_equal || keyval == GDK_KEY_KP_Add) {
+            if (web_view) {
+                gdouble z = webkit_web_view_get_zoom_level(web_view);
+                webkit_web_view_set_zoom_level(web_view, z + 0.1);
+            }
+            return TRUE;
+        }
+        if (keyval == GDK_KEY_minus || keyval == GDK_KEY_KP_Subtract) {
+            if (web_view) {
+                gdouble z = webkit_web_view_get_zoom_level(web_view);
+                webkit_web_view_set_zoom_level(web_view, z - 0.1);
+            }
+            return TRUE;
+        }
+        if (keyval == GDK_KEY_0 || keyval == GDK_KEY_KP_0) {
+            if (web_view) {
+                webkit_web_view_set_zoom_level(web_view, 1.0);
+            }
             return TRUE;
         }
         if (keyval == GDK_KEY_Tab) {
@@ -119,6 +144,20 @@ gboolean keys_handle_key(GtkNotebook *notebook, GtkWidget *command_bar, guint ke
         }
     }
 
+    if (g_yank_pending) {
+        g_yank_pending = FALSE;
+        if (keyval == GDK_KEY_y) {
+            if (web_view) {
+                const char *uri = webkit_web_view_get_uri(web_view);
+                if (uri) {
+                    GdkClipboard *clipboard = gdk_display_get_clipboard(gdk_display_get_default());
+                    gdk_clipboard_set_text(clipboard, uri);
+                }
+            }
+            return TRUE;
+        }
+    }
+
     switch (keyval) {
         case GDK_KEY_f:
             if (!ctrl && !shift) {
@@ -129,6 +168,24 @@ gboolean keys_handle_key(GtkNotebook *notebook, GtkWidget *command_bar, guint ke
 
         case GDK_KEY_g:
             g_pending = TRUE;
+            return TRUE;
+
+        case GDK_KEY_y:
+            g_yank_pending = TRUE;
+            return TRUE;
+
+        case GDK_KEY_n:
+            if (web_view) {
+                WebKitFindController *fc = webkit_web_view_get_find_controller(web_view);
+                webkit_find_controller_search_next(fc);
+            }
+            return TRUE;
+
+        case GDK_KEY_N:
+            if (web_view) {
+                WebKitFindController *fc = webkit_web_view_get_find_controller(web_view);
+                webkit_find_controller_search_previous(fc);
+            }
             return TRUE;
 
         case GDK_KEY_j:

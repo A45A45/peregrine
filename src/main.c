@@ -1,12 +1,14 @@
 #include <gtk/gtk.h>
 #include "app.h"
 #include "adblock.h"
+#include "history.h"
 #include "config.h"
 
 int main(int argc, char **argv) {
     const char *url = (argc > 1) ? argv[1] : PEREGRINE_DEFAULT_URL;
 
     adblock_init();
+    history_init();
 
     GtkApplication *app = gtk_application_new("org.peregrine.browser", G_APPLICATION_DEFAULT_FLAGS);
     g_signal_connect(app, "activate", G_CALLBACK(app_activate), (gpointer)url);
