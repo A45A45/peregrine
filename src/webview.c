@@ -65,14 +65,6 @@ static gboolean on_decide_policy(WebKitWebView *web_view,
         return TRUE;
     }
 
-    const char *source_uri = webkit_web_view_get_uri(web_view);
-    if (!source_uri) source_uri = "";
-
-    if (uri && adblock_should_block(uri, source_uri, "document")) {
-        webkit_policy_decision_ignore(decision);
-        return TRUE;
-    }
-
     webkit_policy_decision_use(decision);
     return TRUE;
 }
