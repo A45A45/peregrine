@@ -109,6 +109,28 @@ GtkWidget *webview_create(void) {
         "window.addEventListener('focusin', updateFocus, true);"
         "window.addEventListener('focusout', () => { setTimeout(updateFocus, 0); }, true);"
         "document.addEventListener('selectionchange', updateFocus, true);";
+    const char *clickable_tracker_js =
+        "(function() {\n"
+        "    if (window.__peregrine_clickable_registry) return;\n"
+        "    window.__peregrine_clickable_registry = new Set();\n"
+        "    const clickTypes = new Set(['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup']);\n"
+        "    const origAdd = EventTarget.prototype.addEventListener;\n"
+        "    EventTarget.prototype.addEventListener = function(type, listener, options) {\n"
+        "        if (clickTypes.has(type) && this instanceof Element) {\n"
+        "            window.__peregrine_clickable_registry.add(this);\n"
+        "        }\n"
+        "        return origAdd.call(this, type, listener, options);\n"
+        "    };\n"
+        "})();";
+
+    WebKitUserScript *clickable_tracker_script = webkit_user_script_new(
+        clickable_tracker_js,
+        WEBKIT_USER_CONTENT_INJECT_TOP_FRAME,
+        WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START,
+        NULL, NULL
+    );
+    webkit_user_content_manager_add_script(ucm, clickable_tracker_script);
+    webkit_user_script_unref(clickable_tracker_script);
 
     WebKitUserScript *user_script = webkit_user_script_new(
         script_source,
