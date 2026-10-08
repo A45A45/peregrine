@@ -22,6 +22,7 @@ add_executable(peregrine
     src/keys.c
     src/hint.c
     src/util.c
+    src/bookmarks.c
 )
 
 target_include_directories(peregrine PRIVATE

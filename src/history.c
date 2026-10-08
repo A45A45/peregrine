@@ -33,6 +33,7 @@ void history_init(void) {
 }
 
 void history_record(const char *url, const char *title) {
+    if (g_str_has_prefix(url, "file://")) return;
     if (!s_db || !url || !*url) return;
 
     const char *sql = "INSERT INTO history (url, title, visited_at) VALUES (?, ?, ?);";

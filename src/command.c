@@ -5,6 +5,7 @@
 #include "history.h"
 #include "util.h"
 #include "config.h"
+#include "bookmarks.h"
 
 static WebKitWebView *get_active_web_view(GtkNotebook *notebook) {
     int current_page = gtk_notebook_get_current_page(notebook);
@@ -18,6 +19,18 @@ static void open_history_page(AppState *state, const char *query) {
     g_autofree gchar *cache_dir = g_build_filename(g_get_user_cache_dir(), "peregrine", NULL);
     g_mkdir_with_parents(cache_dir, 0700);
     g_autofree gchar *tmp_path = g_build_filename(cache_dir, "history.html", NULL);
+
+    if (g_file_set_contents(tmp_path, html, -1, NULL)) {
+        g_autofree gchar *file_uri = g_strdup_printf("file://%s", tmp_path);
+        tab_manager_add_tab(state->notebook, file_uri, G_CALLBACK(on_key_pressed), state);
+    }
+}
+
+static void open_bookmarks_page(AppState *state, const char *query) {
+    g_autofree gchar *html = bookmarks_build_page(query);
+    g_autofree gchar *cache_dir = g_build_filename(g_get_user_cache_dir(), "peregrine", NULL);
+    g_mkdir_with_parents(cache_dir, 0700);
+    g_autofree gchar *tmp_path = g_build_filename(cache_dir, "bookmarks.html", NULL);
 
     if (g_file_set_contents(tmp_path, html, -1, NULL)) {
         g_autofree gchar *file_uri = g_strdup_printf("file://%s", tmp_path);
@@ -93,6 +106,16 @@ static void on_entry_activate(GtkEntry *entry, gpointer user_data) {
             open_history_page(state, *query != '\0' ? query : NULL);
         } else if (g_str_equal(text, "history") || g_str_equal(text, "hist")) {
             open_history_page(state, NULL);
+        } else if (g_str_equal(text, "bookmark") || g_str_equal(text, "bm")) {
+            bookmarks_add_current(get_active_web_view(GTK_NOTEBOOK(state->notebook)));
+        } else if (g_str_equal(text, "unbookmark") || g_str_equal(text, "unbm")) {
+            bookmarks_remove_current(get_active_web_view(GTK_NOTEBOOK(state->notebook)));
+        } else if (g_str_has_prefix(text, "bookmarks ") || g_str_has_prefix(text, "bms ")) {
+            const char *query = text + (g_str_has_prefix(text, "bookmarks ") ? 10 : 4);
+            while (*query == ' ') query++;
+            open_bookmarks_page(state, *query != '\0' ? query : NULL);
+        } else if (g_str_equal(text, "bookmarks") || g_str_equal(text, "bms")) {
+            open_bookmarks_page(state, NULL);
         } else if (util_is_bare_url(text)) {
             tab_manager_add_tab(state->notebook, text, G_CALLBACK(on_key_pressed), state);
         } else {

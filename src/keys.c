@@ -2,6 +2,7 @@
 #include "tab.h"
 #include "hint.h"
 #include <jsc/jsc.h>
+#include "bookmarks.h"
 
 static gboolean g_pending = FALSE;
 static gboolean g_yank_pending = FALSE;
@@ -173,7 +174,9 @@ gboolean keys_handle_key(GtkNotebook *notebook, GtkWidget *command_bar, guint ke
         case GDK_KEY_y:
             g_yank_pending = TRUE;
             return TRUE;
-
+        case GDK_KEY_B:
+            if (web_view) bookmarks_add_current(web_view);
+            return TRUE;
         case GDK_KEY_n:
             if (web_view) {
                 WebKitFindController *fc = webkit_web_view_get_find_controller(web_view);
