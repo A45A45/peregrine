@@ -8,6 +8,7 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(GTK4 REQUIRED gtk4)
 pkg_check_modules(WEBKIT REQUIRED webkitgtk-6.0)
 pkg_check_modules(SQLITE3 REQUIRED sqlite3)
+pkg_check_modules(SOUP REQUIRED libsoup-3.0)
 
 add_executable(peregrine
     src/main.c
@@ -18,24 +19,27 @@ add_executable(peregrine
     src/storage.c
     src/adblock.c
     src/history.c
+    src/bookmarks.c
+    src/portal.c
     src/command.c
     src/keys.c
     src/hint.c
     src/util.c
-    src/bookmarks.c
 )
 
 target_include_directories(peregrine PRIVATE
     ${GTK4_INCLUDE_DIRS}
     ${WEBKIT_INCLUDE_DIRS}
     ${SQLITE3_INCLUDE_DIRS}
+    ${SOUP_INCLUDE_DIRS}
 )
 
-target_link_directories(peregrine PRIVATE ${GTK5_LIBRARY_DIRS} ${WEBKIT_LIBRARY_DIRS} ${SQLITE3_LIBRARY_DIRS})
+target_link_directories(peregrine PRIVATE ${GTK4_LIBRARY_DIRS} ${WEBKIT_LIBRARY_DIRS} ${SQLITE3_LIBRARY_DIRS} ${SOUP_LIBRARY_DIRS})
 target_link_libraries(peregrine PRIVATE
     ${GTK4_LIBRARIES}
     ${WEBKIT_LIBRARIES}
     ${SQLITE3_LIBRARIES}
+    ${SOUP_LIBRARIES}
 )
 
 install(TARGETS peregrine

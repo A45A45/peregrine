@@ -6,5 +6,6 @@
 #define PEREGRINE_FALLBACK_URL "https://webkitgtk.org"
 #define PEREGRINE_INVIDIOUS_INSTANCE "https://yewtu.be"
 #define PEREGRINE_SEARCH_URL "https://swisscows.com/web?query=%s"
+#define PEREGRINE_PORTAL_PROBE_URL "http://detectportal.firefox.com/success.txt"
 
 #endif // CONFIG_H

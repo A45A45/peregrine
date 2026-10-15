@@ -14,4 +14,4 @@ CompileFlags:
     - "-I/run/host/lib64/graphene-1.0/include"
     - "-I/run/host/usr/include"
     - "-I/run/host/usr/include/libsoup-3.0"
-    
+    - "-D__GLIBC_PREREQ(maj,min)=0"    

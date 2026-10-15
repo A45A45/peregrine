@@ -1,7 +1,13 @@
 #include "window.h"
 #include "tab.h"
 #include "command.h"
+#include "portal.h"
 #include "config.h"
+
+static void on_portal_detected(const char *url, gpointer user_data) {
+    AppState *state = (AppState *)user_data;
+    tab_manager_add_tab(state->notebook, url, G_CALLBACK(on_key_pressed), state);
+}
 
 GtkWidget *window_create(GtkApplication *app, const char *initial_url) {
     GtkWidget *window = gtk_application_window_new(app);
@@ -17,6 +23,8 @@ GtkWidget *window_create(GtkApplication *app, const char *initial_url) {
     AppState *state = command_bar_init(window, notebook, root_box);
 
     tab_manager_add_tab(notebook, initial_url, G_CALLBACK(on_key_pressed), state);
+
+    portal_init(on_portal_detected, state);
 
     return window;
 }

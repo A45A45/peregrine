@@ -6,6 +6,7 @@
 #include "util.h"
 #include "config.h"
 #include "bookmarks.h"
+#include "portal.h"
 
 static WebKitWebView *get_active_web_view(GtkNotebook *notebook) {
     int current_page = gtk_notebook_get_current_page(notebook);
@@ -118,6 +119,8 @@ static void on_entry_activate(GtkEntry *entry, gpointer user_data) {
             open_bookmarks_page(state, NULL);
         } else if (util_is_bare_url(text)) {
             tab_manager_add_tab(state->notebook, text, G_CALLBACK(on_key_pressed), state);
+        } else if (g_str_equal(text, "portal") || g_str_equal(text, "captive")) {
+            portal_check_now(TRUE);
         } else {
             g_autofree gchar *search_url = util_build_search_url(text);
             if (search_url) {
